@@ -18,7 +18,7 @@ Mở http://localhost:3000.
 
 ## Cá nhân hóa trước khi gửi
 - Thay ảnh minh họa tại `config/anniversary.ts` bằng ảnh thật của hai bạn (ít nhất 10 ảnh). Ảnh hiện tại là ảnh phong cảnh mẫu, chưa phải ảnh của hai người.
-- Nếu có nhạc, đặt file MP3 tại `public/audio/theme.mp3`. Chưa kèm nhạc vì chưa có file được cấp phép; nút nhạc sẽ hiện nhưng cần có file để phát.
+- Nhạc nền hiện được tạo trực tiếp bằng Web Audio API (không phụ thuộc file MP3 bên ngoài), bắt đầu phát khi người xem chủ động bật nhạc. Nếu muốn dùng bài hát riêng của hai bạn, cần bổ sung file âm thanh đã có quyền sử dụng và thay engine tương ứng.
 - Sửa các mốc timeline, chú thích và thư trong `config/anniversary.ts`.
 - Mật khẩu hiện tại là `3010`. Đây là cổng riêng tư phía trình duyệt, không phải xác thực bảo mật: mã được đóng gói trong JavaScript. Với nội dung thực sự riêng tư, nên thêm bảo vệ ở tầng server/Vercel.
 

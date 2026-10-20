@@ -6,7 +6,6 @@ export const anniversary = {
   startedAt: "2022-10-30T00:00:00+07:00",
   confessedAt: "2022-10-29T20:00:00+07:00",
   years: 4,
-  music: { src: "/audio/theme.mp3", volume: 0.35 },
   timeline: [
     { date: "29/10/2022 · buổi tối", title: "Đêm anh chọn nói thương em", text: "Có những điều giữ trong lòng mãi cũng chẳng thành kỷ niệm. Tối hôm ấy, anh gom hết can đảm để nói ra điều mà trái tim đã biết từ lâu.", photo: 1 },
     { date: "30/10/2022", title: "Ngày chúng mình bắt đầu", text: "Từ hôm ấy, thế giới của anh có thêm một người để nhớ, để thương, để muốn kể nghe mọi chuyện nhỏ xíu trong ngày.", photo: 2 },
@@ -28,7 +27,7 @@ export const anniversary = {
     { src: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1200&q=85", caption: "Đi qua bao mùa, vẫn muốn đi cùng em", date: "Một mùa khác" },
     { src: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1200&q=85", caption: "Rừng xanh và một lời hẹn dài lâu", date: "Giữa chuyến đi" },
     { src: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1200&q=85", caption: "Thêm một dấu chân trong ký ức", date: "Một nơi xa" },
-    { src: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1200&q=85&sat=-20", caption: "Còn nhiều nơi mình chưa đi cùng nhau", date: "Ngày mai nhé" }
+    { src: "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?auto=format&fit=crop&w=1200&q=85", caption: "Còn nhiều nơi mình chưa đi cùng nhau", date: "Ngày mai nhé" }
   ],
   letter: [
     "Gửi bé Bo của anh,",

@@ -33,6 +33,12 @@ button, a { -webkit-tap-highlight-color: transparent; touch-action: manipulation
 .petal { position: absolute; width: 8px; height: 13px; border-radius: 100% 0 100% 0; background: linear-gradient(140deg,#f9dbe5,#dd6489); opacity: .65; animation: fall linear infinite; pointer-events: none; }
 @keyframes fall { 0% { transform: translate3d(0,-10vh,0) rotate(0); opacity: 0; } 10% { opacity: .65; } 90% { opacity: .4; } 100% { transform: translate3d(80px,110vh,0) rotate(430deg); opacity: 0; } }
 @keyframes breathe { 0%,100% { transform: scale(1); opacity: .22; } 50% { transform: scale(1.14); opacity: .4; } }
+@keyframes orbit-spin { from { transform: translate(-50%,-50%) rotate(0deg); } to { transform: translate(-50%,-50%) rotate(360deg); } }
+@keyframes spark-drift { 0%,100% { transform: translate(0,0) scale(.75); opacity: .25; } 50% { transform: translate(7px,-10px) scale(1.2); opacity: .95; } }
+.anniversary-mark { isolation: isolate; }
+.anniversary-orbit { position: absolute; left: 50%; top: 43%; width: 118%; aspect-ratio: 1; border: 1px solid rgb(244 182 200 / .22); border-radius: 50%; transform: translate(-50%,-50%); animation: orbit-spin 36s linear infinite; pointer-events: none; }
+.anniversary-orbit::before { content: ""; position: absolute; top: 12%; left: 17%; width: 7px; height: 7px; border-radius: 50%; background: #f9dbe5; box-shadow: 0 0 20px #f4b6c8; }
+.hero-spark { position: absolute; top: 8%; right: -10%; width: 8px; height: 8px; border-radius: 50%; background: #fff; box-shadow: 0 0 22px 5px rgb(244 182 200 / .7); pointer-events: none; }
 .aurora { background: radial-gradient(ellipse at 50% 30%,rgb(155 42 82 / .22),transparent 55%), radial-gradient(ellipse at 15% 70%,rgb(236 143 171 / .10),transparent 45%); animation: breathe 12s ease-in-out infinite; }
 .star { position:absolute; width:4px;height:4px;border-radius:50%;background:#f4f0f6;box-shadow:0 0 12px #f4b6c8; }
 @media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; } }
