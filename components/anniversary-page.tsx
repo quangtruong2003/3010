@@ -102,7 +102,10 @@ export default function AnniversaryPage({ data }: { data: AnniversaryData }) {
         <>
           <PetalField count={reduced ? 0 : 16} />
           <MusicToggle unlocked={opened} />
-          <div ref={progressRef} className="pointer-events-none fixed left-0 top-0 z-50 h-[3px] w-full origin-left scale-x-0 bg-gradient-to-r from-rose-300 via-rose-400 to-white/80 shadow-[0_0_12px_#ec8fab80]" aria-hidden />
+          {/* Scroll progress bar */}
+          <div ref={progressRef} className="scroll-progress pointer-events-none" aria-hidden />
+          {/* Subtle grain texture */}
+          <div className="bg-grain pointer-events-none fixed inset-0 z-5" aria-hidden />
           <header className="fixed top-0 z-40 flex w-full items-center justify-between gap-3 border-b border-white/5 bg-ink/55 px-4 py-3 backdrop-blur-xl sm:px-6 sm:py-4">
             <a href="#hero" className="shrink-0 font-script text-xl text-rose-300 sm:text-2xl">T. & B.</a>
             <nav aria-label="Điều hướng chính" className="flex min-w-0 items-center gap-3 overflow-x-auto text-[10px] text-silver sm:gap-5 sm:text-xs">
