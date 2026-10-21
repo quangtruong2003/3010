@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Music2, VolumeX } from "lucide-react";
+import { Music2, VolumeX, Heart } from "lucide-react";
 
 type AudioEngine = {
   context: AudioContext;
@@ -30,10 +30,7 @@ function playNote(engine: AudioEngine, frequency: number, startAt: number, durat
   envelope.connect(master);
   oscillator.start(startAt);
   oscillator.stop(startAt + duration + 0.04);
-  oscillator.onended = () => {
-    oscillator.disconnect();
-    envelope.disconnect();
-  };
+  oscillator.onended = () => { oscillator.disconnect(); envelope.disconnect(); };
 }
 
 function playPhrase(engine: AudioEngine) {
@@ -56,19 +53,14 @@ export function MusicToggle({ unlocked }: { unlocked: boolean }) {
   const [enabled, setEnabled] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const [pulse, setPulse] = useState(0);
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored === "on") setEnabled(true);
-    } catch {}
+    try { const stored = localStorage.getItem(STORAGE_KEY); if (stored === "on") setEnabled(true); } catch {}
     setHydrated(true);
   }, []);
 
-  useEffect(() => {
-    if (!hydrated) return;
-    try { localStorage.setItem(STORAGE_KEY, enabled ? "on" : "off"); } catch {}
-  }, [enabled, hydrated]);
+  useEffect(() => { if (!hydrated) return; try { localStorage.setItem(STORAGE_KEY, enabled ? "on" : "off"); } catch {} }, [enabled, hydrated]);
 
   useEffect(() => () => {
     const current = engine.current;
@@ -78,16 +70,20 @@ export function MusicToggle({ unlocked }: { unlocked: boolean }) {
     engine.current = null;
   }, []);
 
+  // Pulse animation when playing
+  useEffect(() => {
+    if (!enabled) return;
+    const id = window.setInterval(() => setPulse(p => (p + 1) % 100), 3500);
+    return () => window.clearInterval(id);
+  }, [enabled]);
+
   const stop = () => {
     const current = engine.current;
     if (current) {
       if (current.timer !== null) window.clearInterval(current.timer);
       current.timer = null;
       current.master.gain.setTargetAtTime(0.0001, current.context.currentTime, 0.12);
-      window.setTimeout(() => {
-        void current.context.close();
-        if (engine.current === current) engine.current = null;
-      }, 450);
+      window.setTimeout(() => { void current.context.close(); if (engine.current === current) engine.current = null; }, 450);
     }
     setEnabled(false);
   };
@@ -106,28 +102,69 @@ export function MusicToggle({ unlocked }: { unlocked: boolean }) {
       const next: AudioEngine = { context, master, timer: null, step: 0 };
       engine.current = next;
       playPhrase(next);
-      next.timer = window.setInterval(() => {
-        if (context.state === "running") playPhrase(next);
-      }, 3500);
+      next.timer = window.setInterval(() => { if (context.state === "running") playPhrase(next); }, 3500);
       setEnabled(true);
       setUnavailable(false);
-    } catch {
-      setUnavailable(true);
-      setEnabled(false);
-    }
+    } catch { setUnavailable(true); setEnabled(false); }
   };
 
-  const toggle = () => {
-    if (enabled) stop();
-    else void start();
-  };
+  const toggle = () => { if (enabled) stop(); else void start(); };
 
   if (!hydrated) return null;
 
-  return <div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-40 flex items-center gap-3">
-    {unavailable && <span role="status" className="rounded-full border border-rose-300/20 bg-onyx/95 px-3 py-2 text-xs text-silver shadow-lg">Thiết bị không hỗ trợ nhạc nền</span>}
-    <button onClick={toggle} aria-pressed={enabled} aria-label={enabled ? "Tắt nhạc nền" : "Bật nhạc nền"} title={enabled ? "Tắt nhạc nền" : "Bật nhạc nền"} className={`grid h-12 w-12 place-items-center rounded-full border bg-onyx/90 text-rose-300 shadow-[0_0_30px_#9b2a5230] backdrop-blur transition hover:border-rose-300/70 ${enabled ? "border-rose-300/70 ring-4 ring-rose-300/10" : "border-rose-300/30"}`}>
-      {enabled ? <Music2 size={18} className="animate-pulse"/> : <VolumeX size={18}/>}
-    </button>
-  </div>;
+  return (
+    <div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-40 flex items-center gap-3">
+      {unavailable && (
+        <span role="status" className="rounded-full border border-rose-300/20 bg-onyx/95 px-3 py-2 text-xs text-silver shadow-lg">
+          Thiết bị không hỗ trợ nhạc nền
+        </span>
+      )}
+      <button
+        onClick={toggle}
+        aria-pressed={enabled}
+        aria-label={enabled ? "Tắt nhạc nền" : "Bật nhạc nền"}
+        title={enabled ? "Tắt nhạc nền" : "Bật nhạc nền"}
+        className={`group relative grid h-12 w-12 place-items-center rounded-full border bg-onyx/90 text-rose-300 shadow-[0_0_30px_#9b2a5230] backdrop-blur transition hover:border-rose-300/70 ${enabled ? "border-rose-300/70 ring-4 ring-rose-300/10" : "border-rose-300/30"}`}
+      >
+        {/* Background pulse ring */}
+        {enabled && (
+          <motion.span
+            className="absolute inset-0 rounded-full bg-gradient-to-r from-rose-400/0 via-rose-300/20 to-rose-400/0"
+            animate={{ scale: [1, 1.15, 1], opacity: [0.4, 0.1, 0.4] }}
+            transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
+          />
+        )}
+        {/* Floating hearts when playing */}
+        {enabled && !unavailable && (
+          <>
+            <motion.span
+              initial={{ scale: 0, opacity: 0, y: 0 }}
+              animate={{ scale: [0, 1, 0], opacity: [0, 0.6, 0], y: [0, -20, -40] }}
+              transition={{ duration: 3, delay: 0.5, repeat: Infinity, ease: "easeOut" }}
+              className="absolute -top-2 left-1/2 -translate-x-1/2 text-rose-300/60"
+              style={{ fontSize: "10px" }}
+            >
+              ♡
+            </motion.span>
+            <motion.span
+              initial={{ scale: 0, opacity: 0, y: 0 }}
+              animate={{ scale: [0, 1, 0], opacity: [0, 0.5, 0], y: [0, -25, -50] }}
+              transition={{ duration: 3.5, delay: 1.8, repeat: Infinity, ease: "easeOut" }}
+              className="absolute -top-2 right-2 text-rose-300/50"
+              style={{ fontSize: "8px" }}
+            >
+              ♡
+            </motion.span>
+          </>
+        )}
+        <span className="relative z-10 transition-transform duration-300 group-hover:scale-110">
+          {enabled ? <Music2 size={18} className="animate-pulse" /> : <VolumeX size={18} />}
+        </span>
+        {/* Tooltip */}
+        <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 whitespace-nowrap rounded bg-ink/90 px-2.5 py-1.5 text-[10px] text-pearl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+          {enabled ? "Tắt nhạc nền" : "Bật nhạc nền"}
+        </span>
+      </button>
+    </div>
+  );
 }

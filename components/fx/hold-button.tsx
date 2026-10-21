@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { motion, useReducedMotion } from "motion/react";
 
 type HoldButtonProps = {
   duration?: number;
@@ -10,17 +11,21 @@ type HoldButtonProps = {
   label?: string;
 };
 
-/** Giữ (press-and-hold) để kích hoạt. Nhả sớm thì hủy. */
-export function HoldButton({ duration = 1200, onComplete, className = "", children, label }: HoldButtonProps) {
+/** Giữ (press-and-hold) để kích hoạt. Vòng tròn tiến trình romantic. */
+export function HoldButton({ duration = 1400, onComplete, className = "", children, label }: HoldButtonProps) {
   const [progress, setProgress] = useState(0);
+  const [active, setActive] = useState(false);
   const raf = useRef(0);
   const start = useRef(0);
   const done = useRef(false);
+  const reduced = useReducedMotion();
 
   const stop = useCallback(() => {
     cancelAnimationFrame(raf.current);
     if (!done.current) setProgress(0);
+    setActive(false);
     start.current = 0;
+    done.current = false;
   }, []);
 
   const tick = useCallback(() => {
@@ -29,6 +34,7 @@ export function HoldButton({ duration = 1200, onComplete, className = "", childr
     if (p >= 1) {
       done.current = true;
       setProgress(0);
+      setActive(false);
       onComplete();
       return;
     }
@@ -37,7 +43,7 @@ export function HoldButton({ duration = 1200, onComplete, className = "", childr
 
   useEffect(() => () => cancelAnimationFrame(raf.current), []);
 
-  const R = 26;
+  const R = 30;
   const C = 2 * Math.PI * R;
 
   return (
@@ -48,6 +54,7 @@ export function HoldButton({ duration = 1200, onComplete, className = "", childr
         e.preventDefault();
         done.current = false;
         start.current = performance.now();
+        setActive(true);
         raf.current = requestAnimationFrame(tick);
       }}
       onPointerUp={stop}
@@ -59,16 +66,38 @@ export function HoldButton({ duration = 1200, onComplete, className = "", childr
       {children}
       {progress > 0 && (
         <span aria-hidden className="pointer-events-none absolute inset-0 grid place-items-center">
-          <svg className="h-16 w-16 -rotate-90" viewBox="0 0 64 64">
-            <circle cx="32" cy="32" r={R} fill="none" stroke="rgb(244 182 200 / .18)" strokeWidth="2" />
-            <circle
-              cx="32" cy="32" r={R} fill="none" stroke="#ec8fab" strokeWidth="2" strokeLinecap="round"
+          <svg className="h-18 w-18 -rotate-90" viewBox="0 0 72 72">
+            {/* Background track */}
+            <circle cx="36" cy="36" r={R} fill="none" stroke="rgb(244 182 200 / .12)" strokeWidth="3" />
+            {/* Progress ring */}
+            <motion.circle
+              cx="36" cy="36" r={R} fill="none" stroke="#ec8fab" strokeWidth="3" strokeLinecap="round"
               strokeDasharray={C} strokeDashoffset={C * (1 - progress)}
-              style={{ transition: "stroke-dashoffset 60ms linear" }}
+              style={{ transition: "stroke-dashoffset 60ms linear", filter: "drop-shadow(0 0 8px #ec8fab)" }}
+              animate={{ strokeDashoffset: C * (1 - progress) }}
+              initial={false}
+            />
+            {/* Glow at progress head */}
+            <motion.circle
+              cx="36" cy="36" r={R} fill="none" stroke="#f9dbe5" strokeWidth="2" strokeLinecap="round"
+              strokeDasharray="4, 1000" strokeDashoffset={C * (1 - progress)}
+              animate={{ strokeDashoffset: C * (1 - progress), opacity: [0, 1, 0] }}
+              transition={{ duration: 0.1 }}
             />
           </svg>
-          <span className="absolute text-[10px] uppercase tracking-[.18em] text-rose-200">Giữ…</span>
+          <span className="absolute text-[10px] uppercase tracking-[.18em] text-rose-200/90">
+            {progress > 0.95 ? "✦" : "Giữ…"}
+          </span>
         </span>
+      )}
+      {/* Subtle ripple on press */}
+      {active && !reduced && (
+        <motion.span
+          initial={{ scale: 0.95, opacity: 0.3 }}
+          animate={{ scale: 1.1, opacity: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          className="absolute inset-0 rounded-full border-2 border-rose-300/30 pointer-events-none"
+        />
       )}
     </button>
   );
