@@ -14,16 +14,50 @@ Mở http://localhost:3000.
 2. Vào https://vercel.com/new, import repository.
 3. Framework preset: Next.js; Build Command `npm run build`; Output Directory để mặc định.
 4. Deploy, sau đó có thể gắn tên miền ở Project → Settings → Domains.
-5. Thêm biến môi trường `NEXT_PUBLIC_SITE_URL` bằng URL Vercel hoặc tên miền chính thức để OG preview tạo URL đúng.
+5. Thêm biến môi trường:
+   - `NEXT_PUBLIC_SITE_URL` = URL Vercel hoặc tên miền chính thức (ví dụ `https://3010.vercel.app`) — để OG preview tạo URL đúng.
+   - `SITE_PASSWORD` = mật khẩu mở khóa (mặc định `3010`). Đổi thành giá trị riêng nếu muốn.
+   - `SESSION_SECRET` = chuỗi bí mật ký cookie (tự sinh một chuỗi ngẫu nhiên dài).
+5. Deploy, sau đó có thể gắn tên miền ở Project → Settings → Domains.
+
+## Cấu trúc ảnh thật (Quan trọng!)
+Ảnh thật của hai đứa đặt trong thư mục **`photos/`** (ngoài `/public` để không bị public trực tiếp):
+
+```
+photos/
+├── 01.jpg … 12.jpg     # Gallery album (tương ứng gallery[0]…gallery[11])
+├── 01.jpg … 07.jpg     # Timeline dùng lại ảnh gallery 01…07 (theo id trong timeline.photo)
+└── companion.png       # Ảnh cắt toàn thân (PNG nền trong suốt) đặt góc màn hình
+```
+
+**Cách hoạt động:**
+- Route `/api/photo/<id>` kiểm tra cookie phiên → chỉ trả ảnh thật khi đã mở khóa.
+- Nếu file thật thiếu → tự rơi về ảnh mẫu Unsplash (`fallback` trong config).
+- Ảnh được phục vụ qua `/api/photo/<id>` nên **không public trực tiếp**.
+- Companion (ảnh cắt đặt góc): đặt `photos/companion.png` (PNG nền trong suốt). Nếu thiếu → tự ẩn.
+
+**Lưu ý bảo mật:**
+- Thư mục `photos/` **KHÔNG** nằm trong `/public` → ảnh thật không public trực tiếp.
+- Vercel: cấu hình `experimental.outputFileTracingIncludes` trong `next.config.ts` đã bao gồm `./photos/**` để file ảnh được đóng gói vào serverless function `/api/photo`.
+- Nếu deploy bằng `vercel` CLI: đảm bảo file ảnh nằm trong repo.
 
 ## Cá nhân hóa trước khi gửi
-- Thay ảnh minh họa tại `config/anniversary.ts` bằng ảnh thật của hai bạn (ít nhất 10 ảnh). Ảnh hiện tại là ảnh phong cảnh mẫu, chưa phải ảnh của hai người.
-- Nhạc nền hiện được tạo trực tiếp bằng Web Audio API (không phụ thuộc file MP3 bên ngoài), bắt đầu phát khi người xem chủ động bật nhạc. Nếu muốn dùng bài hát riêng của hai bạn, cần bổ sung file âm thanh đã có quyền sử dụng và thay engine tương ứng.
-- Sửa các mốc timeline, chú thích và thư trong `config/anniversary.ts`.
-- Mật khẩu hiện tại là `3010`. Đây là cổng riêng tư phía trình duyệt, không phải xác thực bảo mật: mã được đóng gói trong JavaScript. Với nội dung thực sự riêng tư, nên thêm bảo vệ ở tầng server/Vercel.
+- Sửa các mốc timeline, chú thích, thư, lời hứa, ngôi sao, companion lines trong `lib/anniversary-data.ts`.
+- Mật khẩu mặc định `3010` (đặt trong `SITE_PASSWORD` env). Gợi ý trên màn hình khóa: "gợi ý: 30/10".
+- Nhạc nền: Web Audio API (âm thanh tổng hợp). Nếu muốn bài hát thật, thay `MusicToggle` để dùng `<audio>` với file MP3.
+- `SESSION_SECRET`: tự sinh chuỗi ngẫu nhiên dài để ký cookie.
 
-## Ghi chú
-- Metadata noindex/nofollow và robots disallow đã bật.
-- Counter dùng mốc ISO có offset +07:00, độc lập múi giờ máy.
-- Tôn trọng prefers-reduced-motion; nhạc chỉ được phép phát sau tương tác người dùng.
-- Đã có ảnh OG tự tạo tại `app/opengraph-image.tsx` và icon tại `app/icon.tsx`.
+## Tương tác mới (v2)
+1. **Giữ để mở (Hold-to-open):** Màn hình khóa & phong bì thư — giữ nút ~1.4s có vòng tròn tiến trình.
+2. **Phóng to ảnh (Zoom + Swipe):** Chạm ảnh → lightbox; chạm đúp / pinch zoom; vuốt ngang đổi ảnh; ESC/backdrop đóng.
+3. **Người bạn đồng hành (Companion):** Ảnh cắt `photos/companion.png` xuất hiện góc dưới trái sau khi mở thư. Bấm vào để nghe lời nhắn ngẫu nhiên.
+4. **Phản hồi:** Cuối trang có ô "Viết lại cho anh" — sao chép vào clipboard để dán Zalo/Messenger.
+5. **Khoá lại:** Nút "Xem lại từ đầu" giữ nguyên phiên; muốn khoá lại → xóa cookie hoặc POST `/api/lock`.
+
+## Ghi chú kỹ thuật
+- Metadata noindex/nofollow, robots disallow, `X-Content-Type-Options: nosniff`.
+- Counter dùng mốc ISO +07:00, độc lập múi giờ máy.
+- Tôn trọng `prefers-reduced-motion`; nhạc chỉ phát sau tương tác người dùng.
+- Ảnh OG tự tạo (`app/opengraph-image.tsx`), icon (`app/icon.tsx`), apple-icon (`app/apple-icon.tsx`), manifest (`app/manifest.ts`) — hỗ trợ "Add to Home Screen" trên iOS.
+- `prefers-reduced-motion` được tôn trọng hoàn toàn.
+- Code dùng TypeScript strict, ESLint, Tailwind v4, Motion (framer-motion v12).

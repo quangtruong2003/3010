@@ -40,7 +40,6 @@ function playPhrase(engine: AudioEngine) {
   const { context, step } = engine;
   const chord = progression[Math.floor(step / 2) % progression.length];
   const now = context.currentTime + 0.06;
-  // Soft sustained chord, then a slow, bell-like arpeggio.
   chord.forEach((frequency, index) => {
     playNote(engine, frequency / 2, now, 3.45, 0.035, "triangle");
     playNote(engine, frequency, now + index * 0.22, 1.9, 0.045, "sine");
@@ -50,10 +49,26 @@ function playPhrase(engine: AudioEngine) {
   engine.step += 1;
 }
 
+const STORAGE_KEY = "noir-rose-music";
+
 export function MusicToggle({ unlocked }: { unlocked: boolean }) {
   const engine = useRef<AudioEngine | null>(null);
   const [enabled, setEnabled] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored === "on") setEnabled(true);
+    } catch {}
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    try { localStorage.setItem(STORAGE_KEY, enabled ? "on" : "off"); } catch {}
+  }, [enabled, hydrated]);
 
   useEffect(() => () => {
     const current = engine.current;
@@ -75,7 +90,6 @@ export function MusicToggle({ unlocked }: { unlocked: boolean }) {
       }, 450);
     }
     setEnabled(false);
-    try { localStorage.setItem("noir-rose-music", "off"); } catch {}
   };
 
   const start = async () => {
@@ -97,7 +111,6 @@ export function MusicToggle({ unlocked }: { unlocked: boolean }) {
       }, 3500);
       setEnabled(true);
       setUnavailable(false);
-      try { localStorage.setItem("noir-rose-music", "on"); } catch {}
     } catch {
       setUnavailable(true);
       setEnabled(false);
@@ -108,6 +121,8 @@ export function MusicToggle({ unlocked }: { unlocked: boolean }) {
     if (enabled) stop();
     else void start();
   };
+
+  if (!hydrated) return null;
 
   return <div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-40 flex items-center gap-3">
     {unavailable && <span role="status" className="rounded-full border border-rose-300/20 bg-onyx/95 px-3 py-2 text-xs text-silver shadow-lg">Thiết bị không hỗ trợ nhạc nền</span>}
