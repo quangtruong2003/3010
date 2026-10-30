@@ -1,114 +1,727 @@
 "use client";
-import Image from "next/image";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "motion/react";
-import confetti from "canvas-confetti";
-import { ArrowDown, ArrowUpRight, ChevronLeft, ChevronRight, Heart, LockKeyhole, X } from "lucide-react";
-import { toast } from "sonner";
-import { anniversary as data } from "@/config/anniversary";
-import { splitDuration, pad } from "@/lib/dates";
-import { LenisProvider } from "@/components/shared/lenis-provider";
-import { PetalField } from "@/components/fx/petal-field";
-import { MusicToggle } from "@/components/shared/music-toggle";
 
-const photos = data.gallery;
-const roseColors = ["#f9dbe5", "#f4b6c8", "#ec8fab", "#dd6489", "#f4f0f6", "#bdb8c4"];
-const spring = { type: "spring" as const, stiffness: 120, damping: 20, mass: .9 };
+import Image from "next/image";
+import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "motion/react";
+import { gsap } from "gsap";
+import { Asterisk, ArrowDown, ChevronLeft, ChevronRight, Heart, ImagePlus, X } from "lucide-react";
+import { Fragment, useEffect, useId, useRef, useState } from "react";
+import type { RefObject } from "react";
+import { anniversary } from "@/config/anniversary";
+
+type PhotoState = "loading" | "loaded" | "error";
+type OpeningState = "envelope-idle" | "envelope-opening" | "theater-reveal" | "theater-complete" | "scroll-invitation";
+
+function retryWithMp4Fallback(video: HTMLVideoElement, attempted: { current: boolean }, onFailure: () => void) {
+  if (attempted.current) return;
+  attempted.current = true;
+  video.src = "/media/anniversary-opening.mp4";
+  video.load();
+  void video.play().catch(onFailure);
+}
 
 export default function AnniversaryPage() {
-  const [unlocked, setUnlocked] = useState(false);
-  const [password, setPassword] = useState("");
-  const [opened, setOpened] = useState(false);
-  const [now, setNow] = useState<number | null>(null);
-  const [selected, setSelected] = useState<number | null>(null);
-  const [yes, setYes] = useState(false);
-  const [gentleReply, setGentleReply] = useState(false);
-  const [starNote, setStarNote] = useState<number | null>(null);
-  const [secret, setSecret] = useState(false);
-  const [flipped, setFlipped] = useState<number[]>([]);
-  const progressRef = useRef<HTMLDivElement>(null);
-  const reduced = useReducedMotion();
+  const reducedMotion = useReducedMotion();
+  const [openingComplete, setOpeningComplete] = useState(false);
+  const [letterOpen, setLetterOpen] = useState(false);
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState<number | null>(null);
+  const [photoStates, setPhotoStates] = useState<Record<number, PhotoState>>({});
+  const [closing, setClosing] = useState(false);
+  const [photoDirection, setPhotoDirection] = useState(1);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const photoTriggerRef = useRef<HTMLButtonElement>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => { setNow(Date.now()); const id = window.setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(id); }, []);
-  const duration = useMemo(() => now === null ? null : splitDuration(now), [now]);
-  const anniversaryTime = new Date("2026-10-30T00:00:00+07:00").getTime();
-  const isAnniversary = now !== null && new Date(now).toLocaleDateString("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }) === "2026-10-30";
-  const daysUntil = now === null ? 0 : Math.max(0, Math.ceil((anniversaryTime - now) / 86400000));
-  const activeDay = now !== null && now >= anniversaryTime;
-  const confettiBurst = () => confetti({ particleCount: 130, spread: 90, startVelocity: 35, origin: { y: .62 }, colors: roseColors, disableForReducedMotion: true });
-  const openLetter = () => { setOpened(true); setUnlocked(true); if (!reduced) window.setTimeout(() => document.getElementById("hero")?.scrollIntoView({ behavior: "smooth" }), 1050); else document.getElementById("hero")?.scrollIntoView(); };
   useEffect(() => {
-    let frame = 0;
-    const update = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => {
-        const root = document.documentElement;
-        const max = root.scrollHeight - window.innerHeight;
-        if (progressRef.current) progressRef.current.style.transform = `scaleX(${max > 0 ? window.scrollY / max : 0})`;
-      });
-    };
-    update();
-    window.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update);
-    return () => { cancelAnimationFrame(frame); window.removeEventListener("scroll", update); window.removeEventListener("resize", update); };
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (selectedPhoto !== null && !dialog.open) dialog.showModal();
+    if (selectedPhoto === null && dialog.open) dialog.close();
+  }, [selectedPhoto]);
+
+  useEffect(() => () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
   }, []);
-  const accept = () => { setYes(true); confettiBurst(); toast.success("Anh yêu em, Trân ơi 💗", { description: "Bốn năm rồi, anh vẫn chọn em." }); };
-  const toggleFlip = (i: number) => setFlipped(current => current.includes(i) ? current.filter(x => x !== i) : [...current, i]);
 
-  return <MotionConfig reducedMotion="user"><LenisProvider/>
-    {!unlocked ? <main className="relative grid min-h-svh place-items-center overflow-hidden px-5 py-12"><div className="aurora absolute inset-0"/><div className="relative z-10 w-full max-w-md text-center">
-      <p className="eyebrow mb-8">Một điều nhỏ, chỉ dành cho em</p>
-      <motion.div initial={reduced ? false : { opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .9 }} className="royal-border relative mx-auto mb-8 grid aspect-[4/3] w-full max-w-sm place-items-center bg-[#0d0d12] p-8">
-        <div className="absolute inset-3 border border-rose-300/10"/>
-        <div className="absolute -top-4 left-1/2 -translate-x-1/2 text-rose-300"><span className="grid h-10 w-10 place-items-center rounded-full border border-rose-300/50 bg-[#9b2a52] shadow-[0_0_32px_#9b2a5260]"><Heart size={17} fill="currentColor"/></span></div>
-        <div><p className="font-script text-4xl text-rose-300">Gửi bé Bo</p><p className="mt-3 font-display text-3xl italic text-pearl">Một bức thư trong đêm</p><div className="mx-auto my-5 h-px w-16 bg-rose-300/50"/><p className="text-xs tracking-[.24em] text-silver">30 · 10 · 2026</p></div>
-      </motion.div>
-      <p className="mb-5 font-display text-2xl italic text-silver">Dành riêng cho Hà Bảo Trân</p>
-      <form onSubmit={e => { e.preventDefault(); if (password === "3010") { setUnlocked(true); setOpened(false); } else toast.error("Mật khẩu chưa đúng, bé Bo thử lại nhé."); }} className="mx-auto flex max-w-xs gap-2">
-        <label className="sr-only" htmlFor="pass">Mật khẩu</label><input id="pass" value={password} onChange={e => setPassword(e.target.value)} inputMode="numeric" autoComplete="off" maxLength={4} placeholder="Mật mã bí mật" className="min-w-0 flex-1 rounded-full border border-rose-300/20 bg-onyx px-4 py-3 text-center tracking-[.3em] text-pearl placeholder:tracking-normal placeholder:text-platinum focus:border-rose-300 outline-none"/>
-        <button className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-rose-400 text-ink transition hover:bg-blush" aria-label="Mở khóa"><LockKeyhole size={18}/></button>
-      </form><p className="mt-3 text-xs text-platinum">Một ngày đặc biệt của hai đứa mình · gợi ý: 30/10</p>
-    </div></main> : !opened ? <main className="relative grid min-h-svh place-items-center overflow-hidden px-5"><div className="aurora absolute inset-0"/><motion.button onClick={openLetter} whileTap={{ scale: .97 }} initial={reduced ? false : { opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} className="royal-border relative z-10 flex w-full max-w-md flex-col items-center bg-onyx/80 px-8 py-16 text-center backdrop-blur-xl"><span className="mb-5 grid h-14 w-14 place-items-center rounded-full border border-rose-300/30 bg-rose-700/50 text-rose-300"><Heart size={22}/></span><span className="font-script text-5xl text-rose-300">Gửi Hà Bảo Trân</span><span className="mt-5 font-display text-3xl italic text-pearl">Bốn năm, một lời thương</span><span className="mt-8 text-xs uppercase tracking-[.25em] text-silver">Chạm để mở thư</span><span className="mt-5 text-rose-300"><ArrowUpRight size={20}/></span></motion.button></main> :
-    <><PetalField count={reduced ? 0 : 16}/><MusicToggle unlocked={unlocked}/><div ref={progressRef} className="pointer-events-none fixed left-0 top-0 z-50 h-[3px] w-full origin-left scale-x-0 bg-gradient-to-r from-rose-300 via-rose-400 to-white/80 shadow-[0_0_12px_#ec8fab80]" aria-hidden/>
-    <header className="fixed top-0 z-40 flex w-full items-center justify-between gap-3 border-b border-white/5 bg-ink/55 px-4 py-3 backdrop-blur-xl sm:px-6 sm:py-4"><a href="#hero" className="shrink-0 font-script text-xl text-rose-300 sm:text-2xl">T. & B.</a><nav aria-label="Điều hướng chính" className="flex min-w-0 items-center gap-3 overflow-x-auto text-[10px] text-silver sm:gap-5 sm:text-xs">{[["Khoảnh khắc","#gallery"],["Lá thư","#letter"],["Lời hứa","#promises"]].map(([label,href])=><a key={href} className="shrink-0 transition hover:text-rose-300" href={href}>{label}</a>)}</nav><span className="hidden shrink-0 text-[10px] tracking-[.18em] text-platinum sm:block">30 · 10 · 2026</span></header>
-    <main className="overflow-hidden">
-      <section id="hero" className="relative grid min-h-svh place-items-center px-5 pb-16 pt-24 text-center"><div className="aurora absolute inset-0"/><div className="absolute inset-0 opacity-25" style={{backgroundImage:"radial-gradient(#bdb8c4 0.7px,transparent .7px)",backgroundSize:"42px 42px"}}/>
-        <motion.div initial={reduced ? false : "hidden"} animate="show" variants={{hidden:{opacity:0,y:20},show:{opacity:1,y:0,transition:{staggerChildren:.12}}}} className="relative z-10">
-          <motion.p variants={{hidden:{opacity:0},show:{opacity:1}}} className="eyebrow mb-4">Một hành trình · Một người thương</motion.p>
-          <div className="anniversary-mark relative mx-auto w-fit"><motion.div variants={{hidden:{opacity:0,scale:.72,rotate:-8},show:{opacity:1,scale:1,rotate:0,transition:{...spring,duration:1.2}}}} className="relative z-10 font-display text-[clamp(9rem,35vw,20rem)] font-light leading-[.72] tracking-[-.08em] text-rose-gradient">4</motion.div><span aria-hidden className="anniversary-orbit" /><motion.span aria-hidden className="hero-spark" initial={{opacity:0,scale:0}} animate={{opacity:[0,.9,.35],scale:[0,1,.7]}} transition={{duration:2.8,repeat:Infinity,repeatType:"mirror",delay:.6}}/></div>
-          <motion.p variants={{hidden:{opacity:0,y:12},show:{opacity:1,y:0}}} className="mt-7 font-display text-4xl italic text-pearl sm:text-6xl">năm bên nhau</motion.p>
-          <motion.p variants={{hidden:{opacity:0},show:{opacity:1}}} className="mt-5 font-script text-5xl text-rose-300 sm:text-7xl">Hà Bảo Trân</motion.p>
-          <motion.p variants={{hidden:{opacity:0},show:{opacity:1}}} className="mt-5 text-xs tracking-[.22em] text-silver sm:text-sm">30 · 10 · 2022 <span className="px-2 text-rose-400">→</span> 30 · 10 · 2026</motion.p>
-          <motion.p variants={{hidden:{opacity:0},show:{opacity:1}}} className="mx-auto mt-10 max-w-sm text-sm leading-7 text-silver">Bốn năm — và anh vẫn chọn em, mỗi ngày.</motion.p>
-        </motion.div><a href="#counter" aria-label="Cuộn xuống" className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce text-rose-300"><ArrowDown size={20} strokeWidth={1}/></a>
+  const updatePhoto = (index: number, state: PhotoState) => {
+    setPhotoStates(current => current[index] === state ? current : { ...current, [index]: state });
+  };
+
+  const toggleLetter = () => setLetterOpen(value => !value);
+  const toggleNote = () => setNoteOpen(value => !value);
+
+  const openPhoto = (index: number, trigger: HTMLButtonElement) => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = null;
+    photoTriggerRef.current = trigger;
+    setClosing(false);
+    setSelectedPhoto(index);
+  };
+
+  const closePhoto = () => {
+    if (closing) return;
+    setClosing(true);
+    closeTimer.current = setTimeout(() => {
+      setSelectedPhoto(null);
+      setClosing(false);
+      closeTimer.current = null;
+    }, reducedMotion ? 0 : 180);
+  };
+
+  const changePhoto = (direction: number) => {
+    setPhotoDirection(direction);
+    setSelectedPhoto(index => index === null ? null : (index + direction + anniversary.photos.length) % anniversary.photos.length);
+  };
+
+  const selected = selectedPhoto === null ? null : anniversary.photos[selectedPhoto];
+  const canMove = !closing;
+
+  return <MotionConfig reducedMotion="user">
+    <a className="skip-link" href="#main">Bỏ qua phần đầu</a>
+    {openingComplete && <header className="site-header">
+      <a className="site-mark" href="#top" aria-label="Về đầu trang">
+        <Heart aria-hidden="true" size={20} strokeWidth={1.7} />
+        <span>4 năm bên nhau</span>
+      </a>
+      <nav aria-label="Điều hướng chính" className="site-nav">
+        <a href="#moments">Ảnh</a>
+        <a href="#letter">Lá thư</a>
+        <a href="#note">Bưu thiếp</a>
+      </nav>
+    </header>}
+    <main id="main" className="page-shell">
+      <section id="top" className={`cover cover--opening${openingComplete ? " cover--complete" : ""}`} aria-labelledby="cover-title">
+        <h1 id="cover-title" className="visually-hidden">{anniversary.title}</h1>
+
+        <OpeningExperience
+          reducedMotion={Boolean(reducedMotion)}
+          onComplete={() => setOpeningComplete(true)}
+          photoStates={photoStates}
+          onPhotoStateChange={updatePhoto}
+          onOpenPhoto={openPhoto}
+        />
       </section>
 
-      <section id="counter" className="section-shell py-24 text-center sm:py-36"><p className="eyebrow mb-5">Every second, still you</p><h2 className="section-title">Thời gian có thể đếm,<br/><span className="italic text-rose-gradient">thương em thì không.</span></h2>
-        <p className="mx-auto mt-7 max-w-md text-sm leading-7 text-silver">{isAnniversary ? "Hôm nay là ngày của chúng mình. Chúc mừng bốn năm, bé Bo." : activeDay ? "Mỗi giây đi qua đều là một phần ký ức của hai đứa mình." : "Còn " + daysUntil + " ngày nữa là đến ngày kỷ niệm bốn năm."}</p>
-        <div className="mx-auto mt-12 grid max-w-3xl grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">{[{v:duration?.days ?? "—",l:"ngày"},{v:duration ? pad(duration.hours):"—",l:"giờ"},{v:duration ? pad(duration.minutes):"—",l:"phút"},{v:duration ? pad(duration.seconds):"—",l:"giây"}].map(item=><div key={item.l} className="glass royal-border rounded-2xl px-3 py-6 sm:py-8"><AnimatePresence mode="popLayout"><motion.div key={String(item.v)} initial={reduced ? false : {y:8,opacity:0}} animate={{y:0,opacity:1}} exit={{y:-8,opacity:0}} className="font-display text-5xl font-light text-rose-gradient sm:text-6xl">{item.v}</motion.div></AnimatePresence><p className="mt-2 text-[10px] uppercase tracking-[.22em] text-platinum">{item.l}</p></div>)}</div>
-        <div className="mt-6 flex flex-wrap justify-center gap-2 text-xs text-silver"><span className="rounded-full border border-rose-300/15 px-4 py-2">♑ Bền bỉ như Ma Kết</span><span className="rounded-full border border-rose-300/15 px-4 py-2">4 mùa thu đã có nhau</span><span className="rounded-full border border-rose-300/15 px-4 py-2">Vô số lần nhớ em</span></div>
+      <div className={`keepsake-chapters${openingComplete ? " is-ready" : ""}`} aria-hidden={!openingComplete} inert={!openingComplete}>
+      <section id="moments" className="moments section-shell" aria-labelledby="moments-title">
+        <div className="moments__paper-edge" aria-hidden="true" />
+        <PaperGarden className="moments__garden" />
+        <BotanicalCluster asset="letter" className="moments__botanical moments__botanical--left" />
+        <BotanicalCluster asset="card" className="moments__botanical moments__botanical--right" />
+        <div className="section-heading">
+          <div>
+            <p className="section-heading__note">Mấy khoảnh khắc của tụi mình</p>
+            <h2 id="moments-title">{anniversary.galleryTitle}</h2>
+            <p>{anniversary.galleryCopy}</p>
+          </div>
+          <span className="heading-flower" aria-hidden="true"><Heart size={19} /></span>
+        </div>
+
+        <div className="photo-grid">
+          {anniversary.photos.map((photo, index) => <Fragment key={photo.src}>
+            {(index === 8 || index === 15) && <div key={`album-page-${index}`} className="album-page-marker" aria-hidden="true">
+              <span>{index === 8 ? "Còn nữa nè em" : "Xem tiếp với anh nha"}</span>
+              <Asterisk className="album-page-marker__mark" aria-hidden="true" size={18} strokeWidth={1.4} />
+            </div>}
+            <PhotoFrame
+            photo={photo}
+            index={index}
+            state={photoStates[index] ?? "loading"}
+            onStateChange={updatePhoto}
+            onOpen={openPhoto}
+            />
+          </Fragment>)}
+        </div>
       </section>
 
-      <section id="timeline" className="relative py-24 sm:py-32"><div className="section-shell"><div className="mb-16 text-center"><p className="eyebrow mb-4">Những trang đầu của chúng mình</p><h2 className="section-title">Từng chặng đường<br/><span className="italic text-rose-gradient">mình đã đi qua</span></h2><p className="mx-auto mt-5 max-w-md text-sm leading-7 text-silver">Có những ngày thành dấu mốc. Có những điều nhỏ bé, sau này nhớ lại mới thấy quý vô cùng.</p></div>
-        <div className="relative mx-auto max-w-4xl"><div className="absolute bottom-0 left-[7px] top-0 w-px bg-gradient-to-b from-rose-300/70 via-rose-500/25 to-transparent md:left-1/2"/>{data.timeline.map((item,i)=><motion.article key={item.date} initial={reduced ? false : {opacity:0,y:25}} whileInView={{opacity:1,y:0}} viewport={{once:true,margin:"-10% 0px"}} transition={{duration:.7, ease:[.22,1,.36,1]}} className={`relative mb-8 pl-8 md:mb-12 md:w-1/2 md:pl-0 ${i%2===0?"md:pr-12":"md:ml-auto md:pl-12"}`}><span className={`absolute left-0 top-7 h-4 w-4 rounded-full border border-rose-300 bg-ink shadow-[0_0_20px_#ec8fab70] md:left-auto ${i%2===0?"md:-right-[8px]":"md:-left-[8px]"}`}/><div className="glass royal-border overflow-hidden rounded-2xl"><div className="relative h-44 sm:h-52"><Image src={photos[(item.photo-1)%photos.length].src} alt={item.title} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover opacity-75 grayscale" /></div><div className="p-5 sm:p-7"><p className="eyebrow">{item.date}</p><h3 className="mt-3 font-display text-3xl italic text-pearl">{item.title}</h3><p className="mt-3 text-sm leading-7 text-silver">{item.text}</p></div></div></motion.article>)}</div>
-      </div></section>
+      <section id="letter" className="letter-section section-shell" aria-labelledby="letter-title">
+        <PaperGarden className="letter-section__garden" />
+        <BotanicalCluster asset="letter" className="letter-section__botanical letter-section__botanical--left" />
+        <BotanicalCluster asset="card" className="letter-section__botanical letter-section__botanical--right" />
+        <div className="letter-heading">
+          <span className="letter-heading__mark" aria-hidden="true"><Heart size={19} /></span>
+          <h2 id="letter-title">{anniversary.letterTitle}</h2>
+          <button
+            type="button"
+            className="letter-toggle"
+            aria-expanded={letterOpen}
+            aria-controls="letter-copy"
+            onClick={toggleLetter}
+          >
+            {letterOpen ? "Gấp thư lại" : "Mở thư"}
+          </button>
+        </div>
 
-      <section id="gallery" className="section-shell py-24 sm:py-32"><div className="mb-12 flex flex-col justify-between gap-5 sm:flex-row sm:items-end"><div><p className="eyebrow mb-4">Album của hai đứa</p><h2 className="section-title">Khoảnh khắc<br/><span className="italic text-rose-gradient">mình giữ lại</span></h2></div><p className="max-w-sm text-sm leading-7 text-silver">Một album chỉ có ý nghĩa khi mỗi khung hình là chuyện thật của hai đứa. Trước khi gửi, thay các ảnh mẫu bằng những tấm mà hai người nhìn lại là nhớ ngay hôm ấy.</p></div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4">{photos.map((photo,i)=><motion.button key={photo.src+i} onClick={()=>setSelected(i)} whileHover={reduced?{}:{y:-5,rotate:i%2===0?-1:1}} whileTap={{scale:.98}} className={`group relative overflow-hidden rounded-sm border border-rose-300/15 bg-onyx p-2 text-left ${i%5===1?"sm:translate-y-7":""}`} aria-label={`Mở ảnh: ${photo.caption}`}><div className={`relative overflow-hidden ${i%4===0?"aspect-[3/4]":"aspect-[4/5]"}`}><Image src={photo.src} alt={photo.caption} fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" className="object-cover grayscale transition duration-700 group-hover:scale-105 group-hover:opacity-90" /><div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-transparent to-transparent opacity-70"/></div><div className="px-2 pb-2 pt-3"><p className="font-display text-lg italic text-pearl sm:text-xl">{photo.caption}</p><p className="mt-1 text-[9px] uppercase tracking-[.18em] text-platinum">{photo.date}</p></div></motion.button>)}</div>
+        <FirstLoveLetterEnvelope open={letterOpen} />
       </section>
 
-      <section id="letter" className="relative py-24 sm:py-36"><div className="aurora absolute inset-0 opacity-50"/><div className="section-shell relative max-w-3xl"><div className="royal-border bg-onyx/65 px-6 py-10 backdrop-blur-xl sm:px-14 sm:py-16"><div className="mb-10 text-center"><p className="eyebrow mb-4">A letter from Trường</p><Heart className="mx-auto text-rose-400" size={20}/><h2 className="section-title mt-5">Gửi <span className="italic text-rose-gradient">bé Bo</span></h2></div><div className="space-y-5 font-display text-xl leading-[1.9] text-pearl/90 sm:text-2xl">{data.letter.map((p,i)=><motion.p key={i} initial={reduced?false:{opacity:0,y:18}} whileInView={{opacity:1,y:0}} viewport={{once:true,margin:"-8% 0px"}} transition={{duration:.8,delay:Math.min(i*.08,.3)}} className={i===0||i===data.letter.length-1?"italic text-rose-300":""}>{p}</motion.p>)}</div><div className="mt-12 border-t border-rose-300/15 pt-8 text-right"><p className="font-display text-sm italic text-silver">Mãi thương em,</p><p className="mt-1 font-script text-5xl text-rose-300">Trường</p></div></div></div></section>
-
-      <section id="constellation" className="relative overflow-hidden py-24 sm:py-36"><div className="absolute inset-0 opacity-40" style={{backgroundImage:"radial-gradient(#bdb8c4 .8px,transparent .8px)",backgroundSize:"57px 57px"}}/><div className="section-shell relative"><div className="text-center"><p className="eyebrow mb-4">♑ Capricorn · Ma Kết</p><h2 className="section-title">Chậm mà chắc,<br/><span className="italic text-rose-gradient">như cách mình thương nhau</span></h2><p className="mx-auto mt-6 max-w-xl text-sm leading-7 text-silver">Ma Kết leo từng bước, chậm mà chắc — như cách em đã cùng anh đi qua bốn năm. Chạm vào một ngôi sao nhé, Bo.</p></div>
-        <div className="relative mx-auto mt-14 h-[360px] max-w-2xl sm:h-[430px]">{[[18,20],[42,9],[56,30],[35,42],[66,52],[48,68],[76,78]].map(([x,y],i)=><div key={i}><div className="absolute h-px origin-left bg-gradient-to-r from-rose-300/60 to-silver/20" style={{left:`${x}%`,top:`${y}%`,width:i===0?"25%":i===1?"15%":"20%",transform:`rotate(${[18,65,128,-42,155,-70,0][i]}deg)`}}/><button onClick={()=>setStarNote(i%data.starNotes.length)} aria-label={`Lời nhắn ngôi sao ${i+1}`} className="star z-10 transition hover:scale-[2.2]" style={{left:`${x}%`,top:`${y}%`,width:i===3?8:5,height:i===3?8:5}}/></div>)}<div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-center"><AnimatePresence mode="wait"><motion.p key={starNote??"hint"} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-8}} className="max-w-sm font-display text-xl italic text-rose-300">{starNote===null?"Chạm một vì sao để đọc lời nhắn":data.starNotes[starNote]}</motion.p></AnimatePresence></div></div>
-      </div></section>
-
-      <section id="promises" className="section-shell py-24 sm:py-32"><div className="mb-12 text-center"><p className="eyebrow mb-4">Four promises, from the heart</p><h2 className="section-title">Những điều anh hứa<br/><span className="italic text-rose-gradient">không chỉ bằng lời</span></h2></div><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{data.promises.map((p,i)=><motion.button key={p.title} onClick={()=>toggleFlip(i)} whileTap={{scale:.98}} className="group min-h-64 text-left" aria-pressed={flipped.includes(i)}><motion.div animate={{rotateY:flipped.includes(i)?180:0}} transition={{duration:.55,...spring}} style={{transformStyle:"preserve-3d"}} className="relative h-full min-h-64"><div className="glass royal-border absolute inset-0 flex flex-col items-center justify-center rounded-2xl p-6 text-center [backface-visibility:hidden]"><span className="font-display text-6xl text-rose-gradient">0{i+1}</span><Heart className="my-5 text-rose-400" size={19}/><span className="font-display text-2xl italic">{p.title}</span><span className="mt-4 text-[10px] uppercase tracking-[.18em] text-platinum">Chạm để lật</span></div><div className="glass royal-border absolute inset-0 flex items-center justify-center rounded-2xl p-6 [backface-visibility:hidden] [transform:rotateY(180deg)]"><p className="text-sm leading-7 text-silver">{p.text}</p></div></motion.div></motion.button>)}</div></section>
-
-      <section id="finale" className="relative grid min-h-[90svh] place-items-center overflow-hidden px-5 py-24 text-center"><div className="aurora absolute inset-0"/><div className="relative z-10 mx-auto max-w-3xl"><Heart className="mx-auto mb-8 text-rose-400" size={25} fill={yes?"currentColor":"none"}/><p className="eyebrow mb-5">And our story goes on</p><h2 className="section-title">{yes?"Vậy mình đi tiếp nhé, Bo.":data.finale.question}</h2><p className="mx-auto mt-7 max-w-lg text-sm leading-7 text-silver">{yes?data.finale.afterYes:"Không cần câu trả lời thật lớn lao. Anh chỉ mong sau này, mỗi khi nghĩ về hôm nay, em vẫn thấy mình được yêu thương và trân trọng."}</p><AnimatePresence>{!yes&&<motion.div initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} className="mt-10 flex min-h-16 flex-wrap items-center justify-center gap-4"><button onClick={accept} className="min-h-12 rounded-full bg-rose-400 px-7 py-3 text-sm font-medium text-ink shadow-[0_0_32px_#ec8fab35] transition hover:bg-blush"><Heart className="mr-2 inline" size={16} fill="currentColor"/>{data.finale.yes}</button><button onClick={()=>setGentleReply(true)} className="min-h-12 rounded-full border border-rose-300/25 px-6 py-3 text-sm text-silver transition hover:border-rose-300/60 hover:text-pearl">{data.finale.no}</button></motion.div>}</AnimatePresence>{gentleReply&&!yes&&<motion.p initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} className="mx-auto mt-5 max-w-md text-sm leading-7 text-rose-200/80">Không sao cả, bé Bo cứ trả lời theo điều em thật sự cảm thấy. Anh muốn em luôn thấy an toàn và được tôn trọng khi ở bên anh.</motion.p>}{yes&&<motion.div initial={{scale:.8,opacity:0}} animate={{scale:1,opacity:1}} className="mt-10"><p className="font-script text-5xl text-rose-300 sm:text-7xl">Anh yêu em, bé Bo</p><button onClick={()=>window.scrollTo({top:0,behavior:reduced?"auto":"smooth"})} className="mt-8 inline-flex items-center gap-2 rounded-full border border-rose-300/20 px-5 py-3 text-xs text-silver hover:text-rose-300"><ChevronLeft size={15}/> Xem lại từ đầu</button></motion.div>}</div></section>
+      <section id="note" className="last-note section-shell" aria-labelledby="note-title">
+        <div className="last-note__sun" aria-hidden="true" />
+        <PaperGarden className="last-note__garden last-note__garden--left" />
+        <PaperGarden className="last-note__garden last-note__garden--right" />
+        <BotanicalCluster asset="card" className="last-note__botanical last-note__botanical--left" />
+        <BotanicalCluster asset="letter" className="last-note__botanical last-note__botanical--right" />
+        <div className="postcard-heading">
+          <p>Mừng tụi mình tròn 4 năm</p>
+          <h2 id="note-title">{anniversary.finalTitle}</h2>
+        </div>
+        <AnniversaryGreetingCard open={noteOpen} />
+        <button
+          type="button"
+          className="note-toggle"
+          aria-expanded={noteOpen}
+          aria-controls="final-note-copy"
+          onClick={toggleNote}
+        >
+          {noteOpen ? "Gấp thiệp lại" : "Mở thiệp"}
+        </button>
+      </section>
+      </div>
     </main>
-    <footer className="border-t border-rose-300/10 px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-8 text-center"><button onPointerDown={()=>{const t=window.setTimeout(()=>setSecret(true),900); (window as Window & {__secretTimer?:number}).__secretTimer=t;}} onPointerUp={()=>window.clearTimeout((window as Window & {__secretTimer?:number}).__secretTimer)} aria-label="Giữ trái tim để mở lời nhắn bí mật" className="mx-auto text-rose-400"><Heart size={18} fill="currentColor"/></button><AnimatePresence>{secret&&<motion.p initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} className="mx-auto mt-4 max-w-md font-display text-xl italic text-rose-300">Psst… nếu có thể quay lại tối hôm ấy, anh vẫn sẽ chọn can đảm nói yêu em một lần nữa.</motion.p>}</AnimatePresence><p className="mt-4 text-[10px] uppercase tracking-[.24em] text-platinum">Made with love · 30.10.2026</p><p className="mt-2 text-xs text-silver/60">Trường <span className="text-rose-400">×</span> Bo</p></footer>
-    {selected!==null&&<div role="dialog" aria-modal="true" aria-label="Xem ảnh" onClick={()=>setSelected(null)} onKeyDown={e=>{if(e.key==="Escape")setSelected(null);}} className="fixed inset-0 z-[60] flex items-center justify-center bg-ink/95 p-4 backdrop-blur-xl"><button onClick={()=>setSelected(null)} className="absolute right-5 top-5 rounded-full border border-rose-300/20 p-3 text-pearl" aria-label="Đóng ảnh"><X size={20}/></button><button onClick={e=>{e.stopPropagation();setSelected((selected-1+photos.length)%photos.length);}} className="absolute left-2 top-1/2 rounded-full bg-onyx/80 p-3 text-pearl sm:left-8" aria-label="Ảnh trước"><ChevronLeft/></button><div onClick={e=>e.stopPropagation()} className="w-full max-w-4xl"><div className="relative mx-auto h-[65svh] max-h-[760px] w-full"><Image src={photos[selected].src} alt={photos[selected].caption} fill sizes="90vw" className="object-contain"/></div><p className="mt-5 text-center font-display text-2xl italic text-pearl">{photos[selected].caption}</p><p className="mt-2 text-center text-xs text-platinum">{photos[selected].date}</p></div><button onClick={e=>{e.stopPropagation();setSelected((selected+1)%photos.length);}} className="absolute right-2 top-1/2 rounded-full bg-onyx/80 p-3 text-pearl sm:right-8" aria-label="Ảnh tiếp theo"><ChevronRight/></button></div>}
-    </>}
+
+    <dialog
+      ref={dialogRef}
+      className={`photo-dialog${closing ? " photo-dialog--closing" : ""}`}
+      aria-labelledby="photo-dialog-title"
+      onClose={() => { setSelectedPhoto(null); setClosing(false); photoTriggerRef.current?.focus({ preventScroll: true }); }}
+      onCancel={event => { event.preventDefault(); closePhoto(); }}
+      onClick={event => { if (event.target === dialogRef.current) closePhoto(); }}
+      onKeyDown={event => {
+        if (!canMove) return;
+        if (event.key === "ArrowLeft") { event.preventDefault(); changePhoto(-1); }
+        if (event.key === "ArrowRight") { event.preventDefault(); changePhoto(1); }
+      }}
+    >
+      {selected && selectedPhoto !== null && <>
+        <div className="photo-dialog__topline">
+          <p id="photo-dialog-title">{selected.label}</p>
+          <button type="button" className="icon-button" onClick={closePhoto} aria-label="Đóng ảnh">
+            <X aria-hidden="true" size={21} />
+          </button>
+        </div>
+        <div className="photo-dialog__image" aria-live="polite">
+          <AnimatePresence initial={false}>
+            <motion.div
+              key={selectedPhoto}
+              className="photo-dialog__slide"
+              initial={{ opacity: 0, x: reducedMotion ? 0 : photoDirection * 8 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: reducedMotion ? 0 : photoDirection * -8 }}
+              transition={{ duration: reducedMotion ? 0 : 0.17, ease: "easeOut" }}
+            >
+              <Image
+                src={selected.src}
+                alt={selected.alt}
+                fill
+                sizes="(max-width: 700px) 100vw, 92vw"
+                unoptimized
+                className="photo-dialog__img"
+                onLoad={() => updatePhoto(selectedPhoto, "loaded")}
+                onError={() => updatePhoto(selectedPhoto, "error")}
+              />
+          {photoStates[selectedPhoto] !== "loaded" && <div className="photo-dialog__status">
+                {photoStates[selectedPhoto] === "error"
+                  ? <EmptyPhoto />
+                  : <><ImagePlus aria-hidden="true" size={28} /><span>Anh đang mở ảnh…</span></>}
+              </div>}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+        <div className="photo-dialog__controls">
+          <button type="button" className="icon-button" onClick={() => changePhoto(-1)} aria-label="Ảnh trước" disabled={!canMove}>
+            <ChevronLeft aria-hidden="true" size={22} />
+          </button>
+          <span>{String(selectedPhoto + 1).padStart(2, "0")} / {String(anniversary.photos.length).padStart(2, "0")}</span>
+          <button type="button" className="icon-button" onClick={() => changePhoto(1)} aria-label="Ảnh tiếp theo" disabled={!canMove}>
+            <ChevronRight aria-hidden="true" size={22} />
+          </button>
+        </div>
+      </>}
+    </dialog>
   </MotionConfig>;
+}
+
+function PhotoFrame({
+  photo,
+  index,
+  state,
+  onStateChange,
+  onOpen,
+  featured = false
+}: {
+  photo: (typeof anniversary.photos)[number];
+  index: number;
+  state: PhotoState;
+  onStateChange: (index: number, state: PhotoState) => void;
+  onOpen: (index: number, trigger: HTMLButtonElement) => void;
+  featured?: boolean;
+}) {
+  return <button
+    type="button"
+    className={`photo-frame${featured ? " photo-frame--featured" : ` photo-frame--${photo.shape}`} photo-frame--${index % 4}`}
+    onClick={event => onOpen(index, event.currentTarget)}
+    aria-label={`Mở ${photo.label}`}
+    aria-haspopup="dialog"
+  >
+    <span className="photo-frame__mat">
+      <Image
+        src={photo.src}
+        alt={photo.alt}
+        fill
+        sizes={featured ? "(max-width: 700px) 70vw, 340px" : "(max-width: 700px) 46vw, 24vw"}
+        loading={featured ? undefined : "lazy"}
+        priority={featured}
+        unoptimized
+        className={`photo-frame__image${state === "loaded" ? " is-loaded" : ""}`}
+        onLoad={() => onStateChange(index, "loaded")}
+        onError={() => onStateChange(index, "error")}
+      />
+      {state !== "loaded" && <span className="photo-placeholder" aria-hidden="true">
+        <ImagePlus size={21} strokeWidth={1.4} />
+        <span>{photo.label}</span>
+        <small>{state === "error" ? "Ảnh chưa hiện ra được, em thử tấm khác nha." : "Anh đang mở ảnh…"}</small>
+      </span>}
+    </span>
+    <span className="photo-frame__caption"><span>{photo.label}</span><Heart aria-hidden="true" size={13} /></span>
+  </button>;
+}
+
+function EmptyPhoto() {
+  return <div className="photo-dialog__empty">
+    <ImagePlus aria-hidden="true" size={30} strokeWidth={1.3} />
+    <p>Ảnh chưa hiện ra được, em thử tấm khác nha.</p>
+  </div>;
+}
+
+function OpeningExperience({
+  reducedMotion,
+  onComplete,
+  photoStates,
+  onPhotoStateChange,
+  onOpenPhoto
+}: {
+  reducedMotion: boolean;
+  onComplete: () => void;
+  photoStates: Record<number, PhotoState>;
+  onPhotoStateChange: (index: number, state: PhotoState) => void;
+  onOpenPhoto: (index: number, trigger: HTMLButtonElement) => void;
+}) {
+  const [openingState, setOpeningState] = useState<OpeningState>("envelope-idle");
+  const [renderMode, setRenderMode] = useState(false);
+  const [openingGifReady, setOpeningGifReady] = useState(false);
+  const [openingGifFailed, setOpeningGifFailed] = useState(false);
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const envelopeRef = useRef<HTMLButtonElement>(null);
+  const flapRef = useRef<HTMLSpanElement>(null);
+  const pocketRef = useRef<HTMLSpanElement>(null);
+  const leftFoldRef = useRef<HTMLSpanElement>(null);
+  const rightFoldRef = useRef<HTMLSpanElement>(null);
+  const sealRef = useRef<HTMLSpanElement>(null);
+  const theaterRef = useRef<HTMLDivElement>(null);
+  const photosRef = useRef<HTMLDivElement>(null);
+  const friendsRef = useRef<HTMLDivElement>(null);
+  const invitationRef = useRef<HTMLParagraphElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const mp4FallbackRef = useRef(false);
+  const timelineRef = useRef<gsap.core.Timeline | null>(null);
+  const completeRef = useRef(onComplete);
+
+  useEffect(() => { completeRef.current = onComplete; }, [onComplete]);
+
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "development") return;
+    setRenderMode(new URLSearchParams(window.location.search).get("renderOpening") === "1");
+  }, []);
+
+  const finishOpening = () => {
+    setOpeningState("theater-complete");
+    requestAnimationFrame(() => {
+      setOpeningState("scroll-invitation");
+      invitationRef.current?.focus({ preventScroll: true });
+      completeRef.current();
+    });
+  };
+  const finishRef = useRef(finishOpening);
+  finishRef.current = finishOpening;
+
+  useEffect(() => {
+    if (!renderMode) return;
+    const context = gsap.context(() => {
+      gsap.set(theaterRef.current, { autoAlpha: 0, scale: .86, y: 34, zIndex: 0, transformOrigin: "center center" });
+      gsap.set(photosRef.current, { autoAlpha: 0 });
+      gsap.set(friendsRef.current, { autoAlpha: 0, y: 24 });
+      gsap.set(invitationRef.current, { autoAlpha: 0, y: 12 });
+      const photos = canvasRef.current?.querySelectorAll<HTMLElement>(".theater-photo-wrap");
+      gsap.set(photos ?? [], { autoAlpha: 0, y: 38, scale: .9 });
+      timelineRef.current = gsap.timeline({ paused: true, onComplete: () => finishRef.current() })
+        .to(sealRef.current, { y: -22, scale: .7, autoAlpha: 0, duration: .32, ease: "power1.in" }, 0)
+        .to(flapRef.current, { rotateX: -172, duration: .82, ease: "power2.inOut" }, .12)
+        .to(leftFoldRef.current, { rotateY: -76, x: -26, z: -38, duration: .8, ease: "power2.inOut" }, .32)
+        .to(rightFoldRef.current, { rotateY: 76, x: 26, z: -38, duration: .8, ease: "power2.inOut" }, .32)
+        .to(pocketRef.current, { rotateX: -152, z: 12, duration: .78, ease: "power2.inOut" }, .42)
+        .to(theaterRef.current, { autoAlpha: 1, scale: 1, y: 0, duration: 1.45, ease: "power3.out" }, .45)
+        .call(() => setOpeningState("theater-reveal"), [], .65)
+        .to(photosRef.current, { autoAlpha: 1, duration: .35, ease: "power1.out" }, 1.12)
+        .to(photos ?? [], { autoAlpha: 1, y: 0, scale: 1, duration: .72, stagger: .14, ease: "back.out(1.25)" }, 1.2)
+        .to(friendsRef.current, { autoAlpha: 1, y: 0, duration: .78, ease: "power2.out" }, 1.55)
+        .to(envelopeRef.current, { autoAlpha: 0, scale: .9, y: -22, rotateZ: -2, duration: .92, ease: "power2.inOut" }, 1.42)
+        .to(theaterRef.current, { zIndex: 6, duration: .01 }, 1.72)
+        .to(theaterRef.current, { scale: 1.025, duration: .42, ease: "power1.out" }, 2.8)
+        .to(theaterRef.current, { scale: 1, duration: .48, ease: "power1.inOut" }, 3.22)
+        .to({}, { duration: 2.02 }, 3.42)
+        .call(() => { /* capture reaches its final pose here */ }, [], 5.44);
+      (window as Window & { __anniversaryOpeningTimeline?: gsap.core.Timeline }).__anniversaryOpeningTimeline = timelineRef.current;
+    }, canvasRef);
+    return () => {
+      context.revert();
+      timelineRef.current = null;
+      delete (window as Window & { __anniversaryOpeningTimeline?: gsap.core.Timeline }).__anniversaryOpeningTimeline;
+    };
+  }, [renderMode]);
+
+  useEffect(() => {
+    if (renderMode || openingState !== "envelope-opening" || (!openingGifReady && !openingGifFailed)) return;
+    const video = videoRef.current;
+    if (!video) { finishRef.current(); return; }
+    mp4FallbackRef.current = false;
+    video.currentTime = 0;
+    void video.play().catch(() => retryWithMp4Fallback(video, mp4FallbackRef, () => finishRef.current()));
+  }, [openingState, renderMode, openingGifReady, openingGifFailed]);
+
+  const openEnvelope = () => {
+    if (openingState !== "envelope-idle") return;
+    if (reducedMotion) {
+      finishRef.current();
+      return;
+    }
+    setOpeningState("envelope-opening");
+    if (renderMode) timelineRef.current?.play(0);
+  };
+
+  const theaterVisible = renderMode || openingState === "theater-complete" || openingState === "scroll-invitation";
+  const interactive = openingState === "scroll-invitation";
+  const videoActive = !renderMode && (openingState === "envelope-opening" || openingState === "theater-reveal");
+
+  return <div className="opening-experience" data-opening-state={openingState}>
+    <div className="opening-botanicals" aria-hidden="true">
+      <BotanicalCluster asset="letter" className="opening-botanicals__left" />
+      <BotanicalCluster asset="card" className="opening-botanicals__right" />
+      <PaperGarden className="opening-botanicals__garden opening-botanicals__garden--left" />
+      <PaperGarden className="opening-botanicals__garden opening-botanicals__garden--right" />
+    </div>
+    <div className="opening-canvas" ref={canvasRef} role="group" aria-label={anniversary.openingSceneLabel}>
+      <Image src="/media/anniversary-theater-final-alpha.png" alt="" aria-hidden="true" width={1000} height={694} priority unoptimized className="theater-final-preload" />
+      {renderMode ? <TheaterArtwork
+        theaterRef={theaterRef}
+        photosRef={photosRef}
+        friendsRef={friendsRef}
+        photoStates={photoStates}
+        onPhotoStateChange={onPhotoStateChange}
+        onOpenPhoto={onOpenPhoto}
+        interactive={interactive}
+      /> : theaterVisible ? <TheaterPoster onOpenPhoto={onOpenPhoto} /> : null}
+      {(renderMode || openingState === "envelope-idle") && <EntryEnvelope
+        envelopeRef={envelopeRef}
+        flapRef={flapRef}
+        pocketRef={pocketRef}
+        leftFoldRef={leftFoldRef}
+        rightFoldRef={rightFoldRef}
+        sealRef={sealRef}
+        onOpen={openEnvelope}
+      />}
+      {videoActive && <>
+        {!openingGifFailed && <Image
+          src="/media/anniversary-opening.gif"
+          alt=""
+          aria-hidden="true"
+          width={1000}
+          height={694}
+          unoptimized
+          priority
+          className="opening-animation"
+          onLoad={() => setOpeningGifReady(true)}
+          onError={() => setOpeningGifFailed(true)}
+        />}
+        <video
+        ref={videoRef}
+        className={`opening-video${openingGifFailed ? " is-fallback" : ""}`}
+        aria-hidden="true"
+        tabIndex={-1}
+        playsInline
+        muted
+        preload="auto"
+        poster="/media/anniversary-opening-poster.png"
+        onTimeUpdate={event => {
+          if (event.currentTarget.currentTime >= 1.25) {
+            setOpeningState(current => current === "envelope-opening" ? "theater-reveal" : current);
+          }
+        }}
+        onEnded={finishOpening}
+        onError={event => {
+          const video = event.currentTarget;
+          if (mp4FallbackRef.current) {
+            if (video.currentSrc.endsWith(".mp4") && video.error) finishRef.current();
+            return;
+          }
+          retryWithMp4Fallback(video, mp4FallbackRef, () => finishRef.current());
+        }}
+      >
+        <source src="/media/anniversary-opening.webm" type="video/webm" />
+        <source src="/media/anniversary-opening.mp4" type="video/mp4" />
+        </video>
+      </>}
+    </div>
+    <div className={`opening-caption${interactive ? " opening-caption--visible" : ""}`} aria-hidden={!interactive}>
+      <p className="opening-caption__kicker">{anniversary.openingCaptionKicker}</p>
+      <h2>{anniversary.openingCaptionTitle}</h2>
+      <p className="opening-caption__copy">{anniversary.openingCaptionCopy}</p>
+    </div>
+    {openingState === "envelope-idle" && <p className="opening-instruction">{anniversary.openingInstruction}</p>}
+    <p ref={invitationRef} tabIndex={-1} className={`scroll-invitation${interactive ? " scroll-invitation--visible" : ""}`} aria-hidden={!interactive} role={interactive ? "status" : undefined}>
+      {anniversary.scrollInvitation}
+      <ArrowDown className="scroll-invitation__arrow" aria-hidden="true" size={20} />
+    </p>
+  </div>;
+}
+
+function EntryEnvelope({
+  envelopeRef,
+  flapRef,
+  pocketRef,
+  leftFoldRef,
+  rightFoldRef,
+  sealRef,
+  onOpen
+}: {
+  envelopeRef: RefObject<HTMLButtonElement | null>;
+  flapRef: RefObject<HTMLSpanElement | null>;
+  pocketRef: RefObject<HTMLSpanElement | null>;
+  leftFoldRef: RefObject<HTMLSpanElement | null>;
+  rightFoldRef: RefObject<HTMLSpanElement | null>;
+  sealRef: RefObject<HTMLSpanElement | null>;
+  onOpen: () => void;
+}) {
+  return <button ref={envelopeRef} type="button" className="entry-envelope" aria-label={anniversary.openingButtonLabel} onClick={onOpen}>
+    <span className="entry-envelope__back" aria-hidden="true" />
+    <span ref={leftFoldRef} className="entry-envelope__side entry-envelope__side--left" aria-hidden="true" />
+    <span ref={rightFoldRef} className="entry-envelope__side entry-envelope__side--right" aria-hidden="true" />
+    <span className="entry-envelope__inner" aria-hidden="true" />
+    <span ref={pocketRef} className="entry-envelope__pocket" aria-hidden="true" />
+    <span ref={flapRef} className="entry-envelope__flap" aria-hidden="true" />
+    <span ref={sealRef} className="entry-envelope__seal" aria-hidden="true"><Heart size={25} fill="currentColor" /></span>
+  </button>;
+}
+
+function TheaterArtwork({
+  theaterRef,
+  photosRef,
+  friendsRef,
+  photoStates,
+  onPhotoStateChange,
+  onOpenPhoto,
+  interactive
+}: {
+  theaterRef: RefObject<HTMLDivElement | null>;
+  photosRef: RefObject<HTMLDivElement | null>;
+  friendsRef: RefObject<HTMLDivElement | null>;
+  photoStates: Record<number, PhotoState>;
+  onPhotoStateChange: (index: number, state: PhotoState) => void;
+  onOpenPhoto: (index: number, trigger: HTMLButtonElement) => void;
+  interactive: boolean;
+}) {
+  return <div className="paper-theatre" ref={theaterRef} aria-hidden={!interactive} inert={!interactive}>
+    <Image className="paper-theatre__shell" src="/artwork/paper-theater-shell-v2.webp" alt="" aria-hidden="true" width={1506} height={1045} sizes="(max-width: 700px) 92vw, 78vw" priority unoptimized />
+    <div className="theater-photos" ref={photosRef}>
+      <div className="theater-photo-wrap theater-photo-wrap--main">
+        <PhotoFrame photo={anniversary.photos[6]} index={6} state={photoStates[6] ?? "loading"} onStateChange={onPhotoStateChange} onOpen={onOpenPhoto} featured />
+      </div>
+    </div>
+    <div className="paper-theatre__friends" ref={friendsRef}><PaperFriends /></div>
+  </div>;
+}
+
+function TheaterPoster({ onOpenPhoto }: { onOpenPhoto: (index: number, trigger: HTMLButtonElement) => void }) {
+  const hotspots = [{ index: 6, className: "theater-hotspot--main" }];
+  return <div className="theater-poster" role="group" aria-label={anniversary.finalStageLabel}>
+          <Image src="/media/anniversary-theater-final-alpha.png" alt="" aria-hidden="true" fill sizes="(max-width: 700px) 92vw, 78vw" className="theater-poster__image" unoptimized priority />
+    {hotspots.map(({ index, className }) => <button
+      key={index}
+      type="button"
+      className={`theater-hotspot ${className}`}
+      aria-label={`Mở ${anniversary.photos[index].label}: ${anniversary.photos[index].alt}`}
+      aria-haspopup="dialog"
+      onClick={event => onOpenPhoto(index, event.currentTarget)}
+    />)}
+  </div>;
+}
+
+function FirstLoveLetterEnvelope({ open }: { open: boolean }) {
+  const [animationLoaded, setAnimationLoaded] = useState(false);
+  return <div className={`letter-canvas${open ? " letter-canvas--open" : ""}`}>
+    {(!open || !animationLoaded) && <div className="letter-envelope" aria-hidden="true" inert={open}>
+      <div className="letter-envelope__back" />
+      <div className="letter-envelope__inner" />
+      <div className="letter-envelope__side-flap letter-envelope__side-flap--left" />
+      <div className="letter-envelope__side-flap letter-envelope__side-flap--right" />
+      <div className="letter-envelope__pocket"><span>Kỷ niệm 4 năm</span></div>
+      <div className="letter-envelope__top-flap"><span>Gửi em yêu,</span></div>
+      <span className="letter-envelope__seal"><Heart size={20} fill="currentColor" /></span>
+    </div>}
+    {open && <div className={`letter-animation-frame${animationLoaded ? " is-ready" : ""}`}>
+      <KeepsakeAnimation name="anniversary-letter" onLoad={() => setAnimationLoaded(true)} />
+    </div>}
+    <FoldingLoveLetter open={open} />
+  </div>;
+}
+
+function FoldingLoveLetter({ open }: { open: boolean }) {
+  return <article id="letter-copy" className="visually-hidden" aria-hidden={!open} inert={!open}>
+    <div className="letter-sheet__header">
+      <span>Gửi em yêu,</span>
+      <span>Kỷ niệm <strong>4 năm</strong></span>
+    </div>
+    <div className="letter-copy">
+      {anniversary.letter.map(paragraph => <p key={paragraph}>{paragraph}</p>)}
+    </div>
+    <div className="letter-sheet__signature">
+      <span>Thương em nhiều,</span>
+      <Heart aria-hidden="true" size={15} fill="currentColor" />
+    </div>
+  </article>;
+}
+
+function AnniversaryGreetingCard({ open }: { open: boolean }) {
+  const [animationLoaded, setAnimationLoaded] = useState(false);
+  return <div className={`postcard-perspective${open ? " postcard-perspective--open" : ""}`}>
+    {(!open || !animationLoaded) && <div className="postcard postcard--closed" aria-hidden={open} inert={open}>
+      <CardInterior open={false} />
+      <CardCover />
+    </div>}
+    {open && <div className={`postcard-animation-frame${animationLoaded ? " is-ready" : ""}`}>
+      <KeepsakeAnimation name="anniversary-postcard" onLoad={() => setAnimationLoaded(true)} />
+    </div>}
+    {open && animationLoaded && <CardInterior open visuallyHidden />}
+  </div>;
+}
+
+function KeepsakeAnimation({ name, onLoad }: { name: "anniversary-letter" | "anniversary-postcard"; onLoad: () => void }) {
+  return <picture className="keepsake-animation">
+    <source media="(prefers-reduced-motion: reduce) and (max-width: 700px)" srcSet={`/media/${name}-mobile-final.png`} />
+    <source media="(prefers-reduced-motion: reduce)" srcSet={`/media/${name}-final.png`} />
+    <source media="(max-width: 700px)" srcSet={`/media/${name}-mobile.gif`} />
+    <Image src={`/media/${name}.gif`} alt="" fill unoptimized loading="eager" sizes="100vw" onLoad={() => onLoad()} />
+  </picture>;
+}
+
+function CardInterior({ open, visuallyHidden = false }: { open: boolean; visuallyHidden?: boolean }) {
+  return <div id="final-note-copy" className={visuallyHidden ? "visually-hidden" : "postcard__inside"} aria-hidden={!open} inert={!open}>
+    <div className="postcard__page postcard__page--left">
+      <span className="postcard__page-label">Kỷ niệm 4 năm</span>
+      <BotanicalCluster asset="letter" className="postcard__inside-botanical" />
+    </div>
+    <div className="postcard__page postcard__page--right">
+      <span className="postcard__address">Gửi em yêu,</span>
+      <p>{anniversary.finalNote}</p>
+      <span className="postcard__signature">Thương em nhiều,</span>
+    </div>
+  </div>;
+}
+
+function CardCover() {
+  const memoryPhoto = anniversary.photos[6];
+  return <div className="postcard__cover" aria-hidden="true">
+    <div className="postcard__cover-face postcard__cover-face--front">
+      <span className="postcard__cover-kicker">Mừng tụi mình tròn 4 năm</span>
+      <h3>{anniversary.finalTitle}</h3>
+      <BotanicalCluster asset="card" className="postcard__cover-botanical" />
+      <CardStamp />
+    </div>
+    <div className="postcard__cover-face postcard__cover-face--back">
+      <span>Kỷ niệm 4 năm</span>
+      <div className="postcard__cover-photo">
+        <Image
+          src={memoryPhoto.src}
+          alt=""
+          fill
+          sizes="(max-width: 700px) 35vw, 250px"
+          unoptimized
+          className="postcard__cover-photo-img"
+        />
+      </div>
+      <span className="postcard__page-note">Bốn năm bên nhau</span>
+      <BotanicalCluster asset="letter" className="postcard__cover-back-botanical" />
+    </div>
+  </div>;
+}
+
+function CardStamp() {
+  return <span className="postcard__stamp" aria-hidden="true">
+    <Heart size={20} fill="currentColor" />
+  </span>;
+}
+
+function BotanicalCluster({ asset, className }: { asset: "letter" | "card"; className: string }) {
+  const src = asset === "letter" ? "/artwork/botanical-letter.webp" : "/artwork/botanical-card.webp";
+  const dimensions = asset === "letter" ? { width: 1086, height: 1448 } : { width: 1448, height: 1086 };
+  return <Image
+    src={src}
+    alt=""
+    aria-hidden="true"
+    width={dimensions.width}
+    height={dimensions.height}
+    sizes="(max-width: 700px) 26vw, 18vw"
+    loading="lazy"
+    unoptimized
+    className={className}
+  />;
+}
+
+function PaperGarden({ className }: { className: string }) {
+  const id = useId().replace(/:/g, "");
+  return <svg className={className} viewBox="0 0 260 200" fill="none" aria-hidden="true" focusable="false">
+    <defs>
+      <pattern id={`${id}-deep-paper`} patternUnits="userSpaceOnUse" width="260" height="200">
+        <rect width="260" height="200" fill="#315e45" />
+        <image href="/paper-textures/paper-fiber.webp" width="260" height="200" preserveAspectRatio="xMidYMid slice" opacity=".68" />
+      </pattern>
+      <pattern id={`${id}-sage-paper`} patternUnits="userSpaceOnUse" width="260" height="200">
+        <rect width="260" height="200" fill="#477651" />
+        <image href="/paper-textures/paper-fine.webp" width="260" height="200" preserveAspectRatio="xMidYMid slice" opacity=".62" />
+      </pattern>
+      <pattern id={`${id}-leaf-paper`} patternUnits="userSpaceOnUse" width="260" height="200">
+        <rect width="260" height="200" fill="#739465" />
+        <image href="/paper-textures/paper-crease.webp" width="260" height="200" preserveAspectRatio="xMidYMid slice" opacity=".56" />
+        <image href="/paper-textures/paper-handmade.webp" width="260" height="200" preserveAspectRatio="xMidYMid slice" opacity=".16" />
+      </pattern>
+      <pattern id={`${id}-petal-paper`} patternUnits="userSpaceOnUse" width="260" height="200">
+        <rect width="260" height="200" fill="#fff2d7" />
+        <image href="/paper-textures/paper-fiber.webp" width="260" height="200" preserveAspectRatio="xMidYMid slice" opacity=".66" />
+      </pattern>
+      <pattern id={`${id}-ochre-paper`} patternUnits="userSpaceOnUse" width="260" height="200">
+        <rect width="260" height="200" fill="#e7ac4c" />
+        <image href="/paper-textures/paper-fiber.webp" width="260" height="200" preserveAspectRatio="xMidYMid slice" opacity=".5" />
+      </pattern>
+    </defs>
+    <path d="M0 182c22-29 34-20 50-13 15-44 38-54 70-37 18-48 57-60 82-25 32-22 58-8 65 25v68H0z" fill={`url(#${id}-deep-paper)`} />
+    <path d="M0 194c26-26 45-28 66-5 22-35 45-40 69-19 25-30 50-28 70-5 21-20 36-19 55-8v43H0z" fill={`url(#${id}-sage-paper)`} />
+    <path d="M22 134c-18-20-14-45-2-54 27 3 33 26 28 44M129 128c-21-34-12-60 10-68 20 21 20 43 4 65M211 141c4-36 21-49 41-48 9 25-5 47-30 56" fill={`url(#${id}-leaf-paper)`} />
+    <path d="M49 175c0-28 6-45 17-62m0 62c-10-25-21-31-32-35m32-10c12-17 20-22 30-23" stroke={`url(#${id}-leaf-paper)`} strokeWidth="3" strokeLinecap="round" />
+    <g transform="translate(91 149)"><path d="M0-23c8-10 17-3 15 6 12-5 19 7 10 15 11 8 3 20-9 17-6 14-20 10-21-2-14 2-18-13-7-19-7-9 1-18 12-17z" fill={`url(#${id}-petal-paper)`}/><circle cx="6" cy="0" r="6" fill={`url(#${id}-ochre-paper)`} /></g>
+    <g transform="translate(219 169) scale(.8)"><path d="M0-23c8-10 17-3 15 6 12-5 19 7 10 15 11 8 3 20-9 17-6 14-20 10-21-2-14 2-18-13-7-19-7-9 1-18 12-17z" fill={`url(#${id}-petal-paper)`}/><circle cx="6" cy="0" r="6" fill={`url(#${id}-ochre-paper)`} /></g>
+    <g transform="translate(21 183) scale(.62)"><path d="M0-23c8-10 17-3 15 6 12-5 19 7 10 15 11 8 3 20-9 17-6 14-20 10-21-2-14 2-18-13-7-19-7-9 1-18 12-17z" fill={`url(#${id}-petal-paper)`}/><circle cx="6" cy="0" r="6" fill={`url(#${id}-ochre-paper)`} /></g>
+  </svg>;
+}
+
+function PaperFriends() {
+  return <Image
+    className="paper-friends"
+    src="/artwork/paper-friends.webp"
+    alt=""
+    aria-hidden="true"
+    width={1254}
+    height={1254}
+    sizes="(max-width: 700px) 40vw, 18vw"
+    priority
+    unoptimized
+  />;
 }

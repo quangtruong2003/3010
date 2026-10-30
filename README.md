@@ -1,29 +1,28 @@
-# Noir Rose — 4 năm bên nhau
+# Kỷ niệm 4 năm bên nhau
 
-Landing page kỷ niệm 4 năm của Trường và bé Bo (Hà Bảo Trân), Next.js App Router + TypeScript + Tailwind CSS v4 + Motion.
+Trang kỷ niệm mở từ một phong bì giấy, rồi hé lộ sân khấu ảnh thủ công. Sân khấu kết thúc bằng ảnh thật, không còn phong bì; bên dưới là album, lá thư và thiệp gấp.
 
 ## Chạy local
+
 ```powershell
 npm install
 npm run dev
 ```
+
 Mở http://localhost:3000.
 
-## Deploy Vercel
-1. Đẩy thư mục này lên một repository GitHub riêng.
-2. Vào https://vercel.com/new, import repository.
-3. Framework preset: Next.js; Build Command `npm run build`; Output Directory để mặc định.
-4. Deploy, sau đó có thể gắn tên miền ở Project → Settings → Domains.
-5. Thêm biến môi trường `NEXT_PUBLIC_SITE_URL` bằng URL Vercel hoặc tên miền chính thức để OG preview tạo URL đúng.
+## Video mở màn
 
-## Cá nhân hóa trước khi gửi
-- Thay ảnh minh họa tại `config/anniversary.ts` bằng ảnh thật của hai bạn (ít nhất 10 ảnh). Ảnh hiện tại là ảnh phong cảnh mẫu, chưa phải ảnh của hai người.
-- Nhạc nền hiện được tạo trực tiếp bằng Web Audio API (không phụ thuộc file MP3 bên ngoài), bắt đầu phát khi người xem chủ động bật nhạc. Nếu muốn dùng bài hát riêng của hai bạn, cần bổ sung file âm thanh đã có quyền sử dụng và thay engine tương ứng.
-- Sửa các mốc timeline, chú thích và thư trong `config/anniversary.ts`.
-- Mật khẩu hiện tại là `3010`. Đây là cổng riêng tư phía trình duyệt, không phải xác thực bảo mật: mã được đóng gói trong JavaScript. Với nội dung thực sự riêng tư, nên thêm bảo vệ ở tầng server/Vercel.
+Các tệp GIF, WebM, MP4 và ảnh sân khấu cuối nằm trong `public/media/`. Phong bì mở một lần sau khi được bấm; lời mời cuộn xuống hiện sau sự kiện video kết thúc.
 
-## Ghi chú
-- Metadata noindex/nofollow và robots disallow đã bật.
-- Counter dùng mốc ISO có offset +07:00, độc lập múi giờ máy.
-- Tôn trọng prefers-reduced-motion; nhạc chỉ được phép phát sau tương tác người dùng.
-- Đã có ảnh OG tự tạo tại `app/opengraph-image.tsx` và icon tại `app/icon.tsx`.
+## Thêm ảnh
+
+20 ảnh đã được nối vào album. Giữ nguyên tên tệp hiện tại trong `public/img/`. Khung nào chưa có ảnh sẽ hiện phần chờ ảnh.
+
+Nội dung nằm trong `config/anniversary.ts`. Ảnh mới có thể được thêm vào cấu hình tại đó.
+
+## Kiểu chữ
+
+Trang dùng Macintosh Skeletal Filled Regular. WOFF2 đầy đủ glyph và OpenType tables được chuyển từ [bản static upstream](https://github.com/npwitk/Macintosh-Skeletal-Filled); giấy phép nằm trong `app/fonts/LICENSE.txt`.
+
+Giấy phép upstream chỉ cho mục đích cá nhân, phi thương mại hoặc giáo dục; không dùng font trong sản phẩm thương mại hay gợi ý có liên kết với Apple.

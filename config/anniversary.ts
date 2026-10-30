@@ -1,48 +1,44 @@
 export const anniversary = {
-  herName: "Hà Bảo Trân",
-  nickname: "Bo",
-  hisName: "Trường",
-  zodiac: "Ma Kết",
-  startedAt: "2022-10-30T00:00:00+07:00",
-  confessedAt: "2022-10-29T20:00:00+07:00",
-  years: 4,
-  timeline: [
-    { date: "29/10/2022 · buổi tối", title: "Đêm anh chọn nói thương em", text: "Có những điều giữ trong lòng mãi cũng chẳng thành kỷ niệm. Tối hôm ấy, anh gom hết can đảm để nói ra điều mà trái tim đã biết từ lâu.", photo: 1 },
-    { date: "30/10/2022", title: "Ngày chúng mình bắt đầu", text: "Từ hôm ấy, thế giới của anh có thêm một người để nhớ, để thương, để muốn kể nghe mọi chuyện nhỏ xíu trong ngày.", photo: 2 },
-    { date: "2023 · Năm đầu tiên", title: "Học cách đi cùng nhau", text: "Mình bắt đầu có những thói quen rất riêng: những cuộc trò chuyện dài, những lần dỗi hờn rồi lại thương nhau nhiều hơn.", photo: 3 },
-    { date: "2024 · Năm thứ hai", title: "Những cung đường có em", text: "Điều anh thích không chỉ là nơi mình đến, mà là có em ở phía sau, bên cạnh, hay cùng anh dừng lại ngắm một đoạn đường thật đẹp.", photo: 4 },
-    { date: "2025 · Năm thứ ba", title: "Thêm nhiều nơi, thêm nhiều nhớ", text: "Mình đã đi qua thêm những con dốc, những cơn mưa và cả những ngày chẳng cần đi đâu xa. Chỉ cần cạnh nhau, bình yên cũng thành chuyến đi.", photo: 5 },
-    { date: "2026 · Năm thứ tư", title: "Vẫn là em, vẫn là anh", text: "Bốn năm không phải lúc nào cũng hoàn hảo. Nhưng qua từng chuyện, anh càng hiểu rằng điều quý nhất là mình vẫn muốn nắm tay nhau.", photo: 6 },
-    { date: "30/10/2026", title: "Hôm nay, và những ngày sau", text: "Bốn năm là một dấu mốc đẹp. Anh mong đó chỉ là một trang trong cuốn chuyện dài mà hai đứa mình còn đang viết.", photo: 7 }
+  title: "4 năm rồi đó, em yêu",
+  description: "Anh gom lại những tấm ảnh này để mình cùng nhìn lại bốn năm bên nhau nha em.",
+  openingButtonLabel: "Mở phong bì kỷ niệm 4 năm",
+  openingSceneLabel: "Phong bì mở ra sân khấu ảnh kỷ niệm",
+  openingInstruction: "Em yêu, chạm vào phong bì để mở kỷ niệm nha.",
+  openingCaptionKicker: "4 năm của tụi mình",
+  openingCaptionTitle: "Mấy khoảnh khắc anh muốn giữ",
+  openingCaptionCopy: "Anh gom lại những tấm ảnh này để mình cùng nhìn lại quãng đường đã qua nha em.",
+  scrollInvitation: "Em yêu hãy cuộn xuống nữa nha",
+  finalStageLabel: "Sân khấu ảnh kỷ niệm bốn năm",
+  galleryTitle: "Ảnh của tụi mình",
+  galleryCopy: "Anh gom những tấm ảnh của tụi mình ở đây. Em muốn xem lại tấm nào thì chạm vào nha.",
+  photos: [
+    { src: "/img/photo_1_2026-10-29_10-20-53.jpg", filename: "photo_1_2026-10-29_10-20-53.jpg", label: "Ảnh 01", alt: "Hai người đứng cạnh nhau ngoài trời, một người cầm hoa.", shape: "portrait" },
+    { src: "/img/photo_2_2026-10-29_10-20-53.jpg", filename: "photo_2_2026-10-29_10-20-53.jpg", label: "Ảnh 02", alt: "Hai người chụp ảnh trước gương trong trang phục sẫm màu.", shape: "portrait" },
+    { src: "/img/photo_3_2026-10-29_10-20-53.jpg", filename: "photo_3_2026-10-29_10-20-53.jpg", label: "Ảnh 03", alt: "Chân dung một người phụ nữ mặc áo xanh đậm.", shape: "portrait" },
+    { src: "/img/photo_4_2026-10-29_10-20-53.jpg", filename: "photo_4_2026-10-29_10-20-53.jpg", label: "Ảnh 04", alt: "Hai người chụp ảnh selfie ngoài trời.", shape: "portrait" },
+    { src: "/img/photo_5_2026-10-29_10-20-53.jpg", filename: "photo_5_2026-10-29_10-20-53.jpg", label: "Ảnh 05", alt: "Hai người đứng cạnh nhau trong nhà.", shape: "portrait" },
+    { src: "/img/photo_6_2026-10-29_10-20-53.jpg", filename: "photo_6_2026-10-29_10-20-53.jpg", label: "Ảnh 06", alt: "Hai người che một phần khuôn mặt khi chụp ảnh.", shape: "portrait" },
+    { src: "/img/photo_7_2026-10-29_10-20-53.jpg", filename: "photo_7_2026-10-29_10-20-53.jpg", label: "Ảnh 07", alt: "Hai người chụp chân dung cạnh nhau trong trang phục đen.", shape: "landscape" },
+    { src: "/img/photo_8_2026-10-29_10-20-53.jpg", filename: "photo_8_2026-10-29_10-20-53.jpg", label: "Ảnh 08", alt: "Hai người đeo khẩu trang dưới tán hoa màu hồng nhạt.", shape: "square" },
+    { src: "/img/photo_9_2026-10-29_10-20-53.jpg", filename: "photo_9_2026-10-29_10-20-53.jpg", label: "Ảnh 09", alt: "Hai người đứng cạnh nhau bên lối đi ngoài trời.", shape: "portrait" },
+    { src: "/img/photo_10_2026-10-29_10-20-53.jpg", filename: "photo_10_2026-10-29_10-20-53.jpg", label: "Ảnh 10", alt: "Hai người selfie cạnh bức tường gạch và cây xanh.", shape: "landscape" },
+    { src: "/img/photo_11_2026-10-29_10-20-53.jpg", filename: "photo_11_2026-10-29_10-20-53.jpg", label: "Ảnh 11", alt: "Chân dung một người phụ nữ vào buổi tối.", shape: "portrait" },
+    { src: "/img/photo_12_2026-10-29_10-20-53.jpg", filename: "photo_12_2026-10-29_10-20-53.jpg", label: "Ảnh 12", alt: "Hai người selfie ngoài trời, một người đội mũ trắng đỏ.", shape: "portrait" },
+    { src: "/img/photo_13_2026-10-29_10-20-53.jpg", filename: "photo_13_2026-10-29_10-20-53.jpg", label: "Ảnh 13", alt: "Hai người chụp ảnh trước nền đèn trang trí màu hồng.", shape: "tall" },
+    { src: "/img/photo_14_2026-10-29_10-20-53.jpg", filename: "photo_14_2026-10-29_10-20-53.jpg", label: "Ảnh 14", alt: "Hai người đứng trên lối đi giữa hàng cây.", shape: "portrait" },
+    { src: "/img/photo_15_2026-10-29_10-20-53.jpg", filename: "photo_15_2026-10-29_10-20-53.jpg", label: "Ảnh 15", alt: "Hai người đứng cạnh nhau trên lối đi lát đá.", shape: "portrait" },
+    { src: "/img/photo_16_2026-10-29_10-20-53.jpg", filename: "photo_16_2026-10-29_10-20-53.jpg", label: "Ảnh 16", alt: "Hai người đứng cạnh nhau giữa công viên cây xanh.", shape: "portrait" },
+    { src: "/img/photo_17_2026-10-29_10-20-53.jpg", filename: "photo_17_2026-10-29_10-20-53.jpg", label: "Ảnh 17", alt: "Hai người đứng cạnh nhau trong khu vườn nhiều cây.", shape: "tall" },
+    { src: "/img/photo_18_2026-10-29_10-20-53.jpg", filename: "photo_18_2026-10-29_10-20-53.jpg", label: "Ảnh 18", alt: "Hai người đứng trước một cửa hàng.", shape: "portrait" },
+    { src: "/img/photo_19_2026-10-29_10-20-53.jpg", filename: "photo_19_2026-10-29_10-20-53.jpg", label: "Ảnh 19", alt: "Hai người chụp selfie gần nhau dưới mái che.", shape: "portrait" },
+    { src: "/img/photo_20_2026-10-29_10-20-53.jpg", filename: "photo_20_2026-10-29_10-20-53.jpg", label: "Ảnh 20", alt: "Hai người đứng cạnh nhau trong buổi lễ ngoài trời.", shape: "tall" }
   ],
-  gallery: [
-    { src: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=85", caption: "Có những cung đường làm mình nhớ mãi", date: "Một ngày rong ruổi" },
-    { src: "https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=1200&q=85", caption: "Đi xa một chút, gần nhau thêm một chút", date: "Một chuyến đi" },
-    { src: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=85", caption: "Thế giới rộng, may mà có em", date: "Trên đường" },
-    { src: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1200&q=85", caption: "Mình cứ đi, rồi sẽ có chuyện để kể", date: "Một buổi sáng" },
-    { src: "https://images.unsplash.com/photo-1472396961693-142e6e269027?auto=format&fit=crop&w=1200&q=85", caption: "Có em, chuyến đi nào cũng đáng", date: "Giữa thiên nhiên" },
-    { src: "https://images.unsplash.com/photo-1518837695005-2083093ee35b?auto=format&fit=crop&w=1200&q=85", caption: "Ngồi cạnh nhau nghe biển kể chuyện", date: "Một ngày có gió" },
-    { src: "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=1200&q=85", caption: "Chỗ đẹp nhất là nơi mình cùng đến", date: "Trên hành trình" },
-    { src: "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1200&q=85", caption: "Đêm đầy sao, lòng đầy thương", date: "Một đêm xa phố" },
-    { src: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1200&q=85", caption: "Đi qua bao mùa, vẫn muốn đi cùng em", date: "Một mùa khác" },
-    { src: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1200&q=85", caption: "Rừng xanh và một lời hẹn dài lâu", date: "Giữa chuyến đi" },
-    { src: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1200&q=85", caption: "Thêm một dấu chân trong ký ức", date: "Một nơi xa" },
-    { src: "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?auto=format&fit=crop&w=1200&q=85", caption: "Còn nhiều nơi mình chưa đi cùng nhau", date: "Ngày mai nhé" }
-  ],
+  letterTitle: "Anh có vài điều muốn nói",
   letter: [
-    "Gửi bé Bo của anh,",
-    "Vậy là mình đã đi cùng nhau được bốn năm rồi em nhỉ. Anh vẫn nhớ buổi tối 29 tháng 10 ấy — lúc anh chọn nói ra tình cảm của mình, để rồi ngày hôm sau, 30 tháng 10, trở thành ngày đặc biệt nhất mà anh có thêm một người để thương.",
-    "Anh biết tình yêu không chỉ là những lời ngọt ngào hay những tấm hình đẹp. Tình yêu còn là lúc mệt vẫn muốn kể nhau nghe, lúc giận vẫn không thôi quan tâm, là những chuyến phượt có thể nắng, có thể mưa nhưng chỉ cần quay sang thấy em, anh lại thấy chuyến đi này thật đáng.",
-    "Cảm ơn em vì đã cùng anh lớn lên qua từng năm tháng. Cảm ơn bé Bo vì những điều nhỏ xíu mà em có thể chẳng để ý, nhưng anh luôn cất trong lòng. Anh không hứa ngày nào cũng hoàn hảo, nhưng anh hứa sẽ luôn học cách yêu em tốt hơn — bằng sự tử tế, kiên nhẫn và những hành động thật lòng.",
-    "Nếu được chọn lại, anh vẫn muốn là Trường, vẫn muốn gặp Hà Bảo Trân, vẫn muốn can đảm tỏ tình tối hôm ấy. Và nếu phía trước còn bốn mươi năm, hay nhiều hơn thế, anh mong mình vẫn có thể cùng nhau đi qua những cung đường mới, nắm tay nhau ở những nơi xa lạ, rồi trở về nhà với cảm giác: người mình thương vẫn ở đây.",
-    "Anh vẫn chọn em, hôm nay và mỗi ngày sau đó. Yêu em, bé Bo."
+    "Em yêu à, bốn năm rồi đó. Nhìn lại những tấm hình này, anh vui vì tụi mình đã có nhau trong từng ấy khoảnh khắc.",
+    "Anh giữ ảnh lại để sau này mình còn xem cùng nhau. Có em bên cạnh là điều anh luôn biết ơn, chưa bao giờ xem là đương nhiên.",
+    "Cảm ơn em đã ở bên anh. Mong mình vẫn lắng nghe, quan tâm và dịu dàng với nhau. Chúc mừng 4 năm nha em yêu. Anh thương em nhiều."
   ],
-  promises: [
-    { title: "Luôn lắng nghe", text: "Anh sẽ không xem nhẹ những điều em cảm thấy. Anh muốn hiểu em, kể cả khi điều em cần chỉ là một người ngồi cạnh và lắng nghe." },
-    { title: "Cùng nhau đi", text: "Anh muốn cùng em khám phá thêm nhiều cung đường, nhưng cũng trân trọng những ngày bình thường chẳng cần đi đâu cả." },
-    { title: "Thương bằng hành động", text: "Không chỉ nói yêu em lúc vui. Anh sẽ cố gắng thể hiện tình yêu bằng sự quan tâm, trách nhiệm và những điều nhỏ làm đều đặn." },
-    { title: "Chọn nhau mỗi ngày", text: "Khi có chuyện không vui, anh muốn mình cùng giải quyết vấn đề, không biến nhau thành đối thủ. Anh vẫn muốn đứng cùng một phía với em." }
-  ],
-  starNotes: ["Kiên định — mình không cần nhanh, chỉ cần cùng hướng.", "Bền bỉ — những điều đẹp thường được vun đắp mỗi ngày.", "Dịu dàng — kể cả khi thế giới ngoài kia quá ồn ào.", "Can đảm — như buổi tối anh nói thương em.", "Tự do — cùng nhau đi xa nhưng luôn có đường về.", "Hy vọng — còn rất nhiều bình minh đang đợi hai đứa."],
-  finale: { question: "Bo ơi, em có muốn cùng anh viết tiếp những năm tháng phía trước không?", yes: "Có chứ, đồ ngốc 💗", no: "Để em nghĩ đã", afterYes: "Anh yêu em, Trân ơi. Bốn năm rồi, anh vẫn chọn em — và anh sẽ tiếp tục chọn em, bằng tất cả những gì chân thành nhất trong anh." }
-} as const;
+  finalTitle: "4 năm rồi đó em yêu",
+  finalNote: "Em yêu, anh giữ những tấm hình này để sau này mình còn mở ra xem cùng nhau. Nhìn lại, anh thấy điều quý nhất là bốn năm qua mình đã có nhau. Anh luôn biết ơn em vì đã ở bên anh, và không xem tình cảm này là điều hiển nhiên. Chúc mừng kỷ niệm của tụi mình. Anh thương em nhiều."
+};

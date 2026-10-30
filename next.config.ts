@@ -1,3 +1,3 @@
 import type { NextConfig } from "next";
-const nextConfig: NextConfig = { poweredByHeader: false, images: { remotePatterns: [{ protocol: "https", hostname: "images.unsplash.com" }] } };
+const nextConfig: NextConfig = { poweredByHeader: false, experimental: { cpus: 1 } };
 export default nextConfig;
