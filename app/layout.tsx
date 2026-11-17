@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Be_Vietnam_Pro } from "next/font/google";
 import localFont from "next/font/local";
 import { anniversary } from "@/config/anniversary";
 import "./globals.css";
@@ -9,9 +10,18 @@ const macintosh = localFont({
   style: "normal",
   display: "swap",
   preload: true,
-  fallback: [],
+  fallback: ["Georgia", "serif"],
   adjustFontFallback: false,
-  variable: "--font-macintosh-loaded"
+  variable: "--font-macintosh-loaded",
+});
+
+const beVietnamPro = Be_Vietnam_Pro({
+  subsets: ["vietnamese", "latin"],
+  weight: ["400", "500", "600"],
+  style: ["normal", "italic"],
+  display: "swap",
+  preload: true,
+  variable: "--font-sans-loaded",
 });
 
 export const metadata: Metadata = {
@@ -19,10 +29,32 @@ export const metadata: Metadata = {
   title: anniversary.title,
   description: anniversary.description,
   robots: { index: false, follow: false },
-  openGraph: { title: anniversary.title, description: anniversary.description, type: "website" }
+  openGraph: {
+    title: anniversary.title,
+    description: anniversary.description,
+    type: "website",
+  },
 };
-export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: "#e8e2d6" };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="vi" className={`${macintosh.className} ${macintosh.variable}`}><body>{children}</body></html>;
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f4ece0" },
+    { media: "(prefers-color-scheme: dark)", color: "#f4ece0" },
+  ],
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
+  return (
+    <html
+      lang="vi"
+      className={`${beVietnamPro.variable} ${macintosh.variable} antialiased`}
+    >
+      <body>{children}</body>
+    </html>
+  );
 }
